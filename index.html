@@ -12,7 +12,11 @@
     <script>
         tailwind.config = {
             darkMode: 'class',
-            theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] } } }
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] }
+                }
+            }
         }
     </script>
 
@@ -27,6 +31,7 @@
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
+        /* Input adaptável para Dark/Light */
         .input-modern { 
             @apply w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 bg-slate-50 dark:bg-slate-900/50 text-slate-700 dark:text-slate-200 outline-none transition-all duration-200 focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600; 
         }
@@ -98,8 +103,8 @@
                         <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Acompanhamento de metas operacionais e perdas de etiquetas.</p>
                     </div>
                     <div class="bg-white dark:bg-slate-800 p-1 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 inline-flex">
-                        <button @click="visaoMetas = 'mensal'" :class="visaoMetas === 'mensal' ? 'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'" class="px-5 py-2.5 rounded-lg text-sm transition-all">Mensal</button>
-                        <button @click="visaoMetas = 'anual'" :class="visaoMetas === 'anual' ? 'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'" class="px-5 py-2.5 rounded-lg text-sm transition-all">Anual</button>
+                        <button @click="visaoMetas = 'mensal'" :class="visaoMetas === 'mensal' ? 'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'" class="px-5 py-2.5 rounded-lg text-sm transition-all">Mês Vigente</button>
+                        <button @click="visaoMetas = 'anual'" :class="visaoMetas === 'anual' ? 'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'" class="px-5 py-2.5 rounded-lg text-sm transition-all">Acumulado Anual</button>
                     </div>
                 </div>
 
@@ -123,36 +128,64 @@
                 </div>
                 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden transition-colors">
-                        <div class="absolute right-0 top-0 w-32 h-32 bg-rose-50 dark:bg-rose-900/10 rounded-bl-[100px] -z-0"></div>
+                    <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden transition-colors"
+                         :class="totalProducao > limiteProducao ? 'border-red-300 dark:border-red-900 shadow-red-100/50' : ''">
+                        <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] -z-0 transition-colors"
+                             :class="totalProducao > limiteProducao ? 'bg-red-50 dark:bg-red-900/10' : 'bg-emerald-50 dark:bg-emerald-900/10'"></div>
                         <div class="relative z-10">
-                            <div class="flex items-center gap-3 mb-4">
-                                <div class="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center text-rose-600 dark:text-rose-400"><i class="ph-fill ph-factory text-xl"></i></div>
-                                <h3 class="text-slate-600 dark:text-slate-300 font-bold text-sm uppercase tracking-wider">Desvios Produção</h3>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+                                         :class="totalProducao > limiteProducao ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'">
+                                        <i class="ph-fill ph-factory text-xl"></i>
+                                    </div>
+                                    <h3 class="font-bold text-sm uppercase tracking-wider transition-colors"
+                                        :class="totalProducao > limiteProducao ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">Desvios Produção</h3>
+                                </div>
+                                <span v-if="totalProducao > limiteProducao" class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold px-3 py-1 rounded-full animate-pulse">ESTOUROU</span>
                             </div>
+                            
                             <div class="flex items-end gap-3 mb-6">
-                                <span class="text-5xl font-black text-slate-800 dark:text-white">{{ totalProducao }}</span>
-                                <span class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-1 border-l-2 border-slate-200 dark:border-slate-700 pl-3">Meta: <span class="text-slate-700 dark:text-slate-200 font-bold">{{ visaoMetas === 'mensal' ? metas.producaoMensal : metas.producaoAnual }}</span></span>
+                                <span class="text-5xl font-black transition-colors"
+                                      :class="totalProducao > limiteProducao ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">{{ totalProducao }}</span>
+                                <span class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-1 border-l-2 border-slate-200 dark:border-slate-700 pl-3">Meta: <span class="text-slate-700 dark:text-slate-200 font-bold">{{ limiteProducao }}</span></span>
                             </div>
+                            
                             <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden shadow-inner">
-                                <div class="bg-gradient-to-r from-rose-400 to-rose-600 h-full rounded-full transition-all duration-1000 ease-out" :style="{ width: percentualProducao + '%' }"></div>
+                                <div class="h-full rounded-full transition-all duration-1000 ease-out" 
+                                     :class="totalProducao > limiteProducao ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-emerald-400 to-emerald-600'"
+                                     :style="{ width: Math.min(percentualProducao, 100) + '%' }"></div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden transition-colors">
-                        <div class="absolute right-0 top-0 w-32 h-32 bg-cyan-50 dark:bg-cyan-900/10 rounded-bl-[100px] -z-0"></div>
+                    <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden transition-colors"
+                         :class="totalEstoque > limiteEstoque ? 'border-red-300 dark:border-red-900 shadow-red-100/50' : ''">
+                        <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] -z-0 transition-colors"
+                             :class="totalEstoque > limiteEstoque ? 'bg-red-50 dark:bg-red-900/10' : 'bg-emerald-50 dark:bg-emerald-900/10'"></div>
                         <div class="relative z-10">
-                            <div class="flex items-center gap-3 mb-4">
-                                <div class="w-10 h-10 rounded-full bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400"><i class="ph-fill ph-package text-xl"></i></div>
-                                <h3 class="text-slate-600 dark:text-slate-300 font-bold text-sm uppercase tracking-wider">Desvios Estoque</h3>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+                                         :class="totalEstoque > limiteEstoque ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'">
+                                        <i class="ph-fill ph-package text-xl"></i>
+                                    </div>
+                                    <h3 class="font-bold text-sm uppercase tracking-wider transition-colors"
+                                        :class="totalEstoque > limiteEstoque ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">Desvios Estoque</h3>
+                                </div>
+                                <span v-if="totalEstoque > limiteEstoque" class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold px-3 py-1 rounded-full animate-pulse">ESTOUROU</span>
                             </div>
+                            
                             <div class="flex items-end gap-3 mb-6">
-                                <span class="text-5xl font-black text-slate-800 dark:text-white">{{ totalEstoque }}</span>
-                                <span class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-1 border-l-2 border-slate-200 dark:border-slate-700 pl-3">Meta: <span class="text-slate-700 dark:text-slate-200 font-bold">{{ visaoMetas === 'mensal' ? metas.estoqueMensal : metas.estoqueAnual }}</span></span>
+                                <span class="text-5xl font-black transition-colors"
+                                      :class="totalEstoque > limiteEstoque ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">{{ totalEstoque }}</span>
+                                <span class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-1 border-l-2 border-slate-200 dark:border-slate-700 pl-3">Meta: <span class="text-slate-700 dark:text-slate-200 font-bold">{{ limiteEstoque }}</span></span>
                             </div>
+                            
                             <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden shadow-inner">
-                                <div class="bg-gradient-to-r from-cyan-400 to-cyan-600 h-full rounded-full transition-all duration-1000 ease-out" :style="{ width: percentualEstoque + '%' }"></div>
+                                <div class="h-full rounded-full transition-all duration-1000 ease-out" 
+                                     :class="totalEstoque > limiteEstoque ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-emerald-400 to-emerald-600'"
+                                     :style="{ width: Math.min(percentualEstoque, 100) + '%' }"></div>
                             </div>
                         </div>
                     </div>
@@ -161,7 +194,7 @@
                 <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-slate-700 mb-8 w-full transition-colors">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 text-lg">
-                            <i class="ph-fill ph-chart-bar text-2xl text-indigo-500"></i> Evolução de Desempenho
+                            <i class="ph-fill ph-chart-bar text-2xl text-indigo-500"></i> Evolução Mensal <span class="text-xs text-slate-400 font-normal ml-2">(Vermelho = Acima da Meta / Verde = Dentro da Meta)</span>
                         </h3>
                     </div>
                     <div class="relative h-72 md:h-80 w-full">
@@ -199,7 +232,6 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8">
-                        
                         <div class="md:col-span-4">
                             <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Data e Hora</label>
                             <div class="relative">
@@ -303,13 +335,11 @@
                 </div>
                 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    
                     <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 lg:col-span-3 transition-colors flex justify-between items-center">
                         <div>
                             <h3 class="font-bold text-slate-800 dark:text-white text-lg flex items-center gap-2"><i class="ph-fill ph-gavel text-indigo-500"></i> Gestão de Consequências</h3>
                             <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Habilita ou desabilita o painel de advertências no Dashboard (Regra de 60 dias).</p>
                         </div>
-                        
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" v-model="regraAtiva" @change="salvarRegra" class="sr-only peer">
                             <div class="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
@@ -367,13 +397,13 @@
         </transition>
         
         <div v-if="modalEdicao.aberto" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-2xl w-full shadow-2xl border border-slate-200 dark:border-slate-700 relative">
+            <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-2xl w-full shadow-2xl border border-slate-200 dark:border-slate-700 relative transition-colors">
                 <button @click="modalEdicao.aberto = false" class="absolute top-6 right-6 text-slate-400 hover:text-rose-500"><i class="ph-bold ph-x text-2xl"></i></button>
                 <h3 class="text-2xl font-bold text-slate-800 dark:text-white mb-6">Editar Apontamento</h3>
                 
                 <form @submit.prevent="salvarEdicao">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
+                        <div class="md:col-span-2">
                             <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Data e Hora</label>
                             <input type="datetime-local" v-model="modalEdicao.dataOcorrencia" class="input-modern" required>
                         </div>
@@ -385,23 +415,23 @@
                             </select>
                         </div>
                         <div>
+                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Qtd.</label>
+                            <input type="number" min="1" v-model="modalEdicao.quantidade" class="input-modern font-bold text-rose-600 dark:text-rose-400" required>
+                        </div>
+                        <div>
                             <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Colaborador</label>
                             <select v-model="modalEdicao.responsavel" class="input-modern" required>
                                 <option v-for="resp in listaResponsaveis" :value="resp">{{ resp }}</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Qtd.</label>
-                            <input type="number" min="1" v-model="modalEdicao.quantidade" class="input-modern font-bold text-rose-600 dark:text-rose-400" required>
-                        </div>
-                        <div class="md:col-span-2">
                             <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Motivo</label>
                             <select v-model="modalEdicao.causa" class="input-modern" required>
                                 <option v-for="causa in listaCausas" :value="causa">{{ causa }}</option>
                             </select>
                         </div>
                     </div>
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl mt-4">Atualizar Dados</button>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl mt-4 transition-colors">Atualizar Dados</button>
                 </form>
             </div>
         </div>
