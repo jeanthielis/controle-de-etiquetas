@@ -13,7 +13,7 @@ createApp({
         const currentTab = ref('dashboard');
         const menuMobileAberto = ref(false);
         const mensagemSucesso = ref(false);
-        const visaoMetas = ref('mensal');
+        const visaoMetas = ref('mensal'); // 'mensal' ou 'anual'
         const abaHistorico = ref('Produção');
         const carregando = ref(true);
         const chartInstance = ref(null);
@@ -39,7 +39,6 @@ createApp({
         const novaCausa = ref('');
         const novoColaborador = ref('');
 
-        // DADOS LIMPOS: Agora iniciam totalmente vazios ou zerados
         const savedMetas = JSON.parse(localStorage.getItem('qc_metas')) || { producaoMensal: 0, producaoAnual: 0, estoqueMensal: 0, estoqueAnual: 0 };
         const savedCausas = JSON.parse(localStorage.getItem('qc_causas')) || [];
         const savedResponsaveis = JSON.parse(localStorage.getItem('qc_responsaveis')) || [];
@@ -52,6 +51,8 @@ createApp({
             localStorage.setItem('qc_metas', JSON.stringify(metas));
             localStorage.setItem('qc_causas', JSON.stringify(listaCausas.value));
             localStorage.setItem('qc_responsaveis', JSON.stringify(listaResponsaveis.value));
+            // Atualiza o gráfico se as metas mudarem e estivermos na aba dashboard
+            if (currentTab.value === 'dashboard') setTimeout(() => renderizarGraficoEvolucao(), 50);
         };
 
         const adicionarCausa = () => { if(novaCausa.value.trim()){ listaCausas.value.push(novaCausa.value.trim()); novaCausa.value = ''; salvarConfiguracoes(); } };
@@ -157,18 +158,38 @@ createApp({
             }).sort((a, b) => b.total - a.total);
         });
 
-        const totalProducao = computed(() => registros.value.filter(r => r.local === 'Produção').reduce((acc, r) => acc + (r.quantidade || 1), 0));
-        const totalEstoque = computed(() => registros.value.filter(r => r.local === 'Estoque').reduce((acc, r) => acc + (r.quantidade || 1), 0));
+        // =========================================================================
+        // NOVO: INTELIGÊNCIA DE DATAS PARA OS CARDS (MENSAL VS ANUAL)
+        // =========================================================================
+        const registrosFiltradosPorVisao = computed(() => {
+            const dataAtual = new Date();
+            const mesAtual = dataAtual.getMonth();
+            const anoAtual = dataAtual.getFullYear();
+
+            return registros.value.filter(r => {
+                if (!r.timestampRaw) return false;
+                const dataRegistro = r.timestampRaw.toDate();
+                
+                if (visaoMetas.value === 'mensal') {
+                    // Pega apenas o mês atual do ano atual
+                    return dataRegistro.getMonth() === mesAtual && dataRegistro.getFullYear() === anoAtual;
+                } else {
+                    // Pega o acumulado de todos os meses do ano atual
+                    return dataRegistro.getFullYear() === anoAtual;
+                }
+            });
+        });
+
+        // Limites para facilitar o uso no HTML
+        const limiteProducao = computed(() => visaoMetas.value === 'mensal' ? metas.producaoMensal : metas.producaoAnual);
+        const limiteEstoque = computed(() => visaoMetas.value === 'mensal' ? metas.estoqueMensal : metas.estoqueAnual);
+
+        // Totais e Percentuais baseados no filtro de Data
+        const totalProducao = computed(() => registrosFiltradosPorVisao.value.filter(r => r.local === 'Produção').reduce((acc, r) => acc + (r.quantidade || 1), 0));
+        const totalEstoque = computed(() => registrosFiltradosPorVisao.value.filter(r => r.local === 'Estoque').reduce((acc, r) => acc + (r.quantidade || 1), 0));
         
-        // Evita divisão por zero caso a meta não tenha sido preenchida ainda
-        const percentualProducao = computed(() => {
-            const meta = visaoMetas.value === 'mensal' ? metas.producaoMensal : metas.producaoAnual;
-            return meta > 0 ? Math.min((totalProducao.value / meta) * 100, 100) : 0;
-        });
-        const percentualEstoque = computed(() => {
-            const meta = visaoMetas.value === 'mensal' ? metas.estoqueMensal : metas.estoqueAnual;
-            return meta > 0 ? Math.min((totalEstoque.value / meta) * 100, 100) : 0;
-        });
+        const percentualProducao = computed(() => limiteProducao.value > 0 ? (totalProducao.value / limiteProducao.value) * 100 : 0);
+        const percentualEstoque = computed(() => limiteEstoque.value > 0 ? (totalEstoque.value / limiteEstoque.value) * 100 : 0);
 
         const historicoFiltrado = computed(() => {
             return registros.value.filter(reg => {
@@ -178,6 +199,9 @@ createApp({
             });
         });
 
+        // =========================================================================
+        // NOVO: GRÁFICO COM CORES DINÂMICAS E CONDICIONAIS
+        // =========================================================================
         const renderizarGraficoEvolucao = () => {
             const ctx = document.getElementById('evolucaoChart');
             if (!ctx) return;
@@ -199,6 +223,15 @@ createApp({
             const nomesMeses = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
             const labelsLegiveis = mesesLabels.map(ma => `${nomesMeses[ma.split('/')[0]]}/${ma.split('/')[1].substring(2)}`);
 
+            // Lógica de cores: Verde se dentro da meta MENSAL, Vermelho se estourar a meta
+            const colorirColuna = (valor, limite) => {
+                if (limite <= 0) return '#64748b'; // Cinza se não houver meta cadastrada
+                return valor > limite ? '#ef4444' : '#10b981'; // Vermelho (estourou) ou Verde (ok)
+            };
+
+            const bgProducao = mesesLabels.map(m => colorirColuna(agrupamentoPorMes[m].producao, metas.producaoMensal));
+            const bgEstoque = mesesLabels.map(m => colorirColuna(agrupamentoPorMes[m].estoque, metas.estoqueMensal));
+
             const textColor = isDarkMode.value ? '#94a3b8' : '#64748b';
             const gridColor = isDarkMode.value ? '#334155' : '#f1f5f9';
 
@@ -207,8 +240,8 @@ createApp({
                 data: {
                     labels: labelsLegiveis,
                     datasets: [
-                        { label: 'Canceladas Produção', data: mesesLabels.map(m => agrupamentoPorMes[m].producao), backgroundColor: '#f43f5e', borderRadius: 4 },
-                        { label: 'Canceladas Estoque', data: mesesLabels.map(m => agrupamentoPorMes[m].estoque), backgroundColor: '#0ea5e9', borderRadius: 4 }
+                        { label: 'Produção', data: mesesLabels.map(m => agrupamentoPorMes[m].producao), backgroundColor: bgProducao, borderRadius: 4 },
+                        { label: 'Estoque', data: mesesLabels.map(m => agrupamentoPorMes[m].estoque), backgroundColor: bgEstoque, borderRadius: 4 }
                     ]
                 },
                 options: { 
@@ -225,11 +258,16 @@ createApp({
         watch(currentTab, (newTab) => { 
             if (newTab === 'dashboard') { setTimeout(() => renderizarGraficoEvolucao(), 350); } 
         });
+        watch(visaoMetas, () => { 
+            // Não precisa re-renderizar o gráfico pois ele é sempre mensal, 
+            // apenas os cards são reativos e mudarão sozinhos na tela.
+        });
 
         return {
             currentTab, menuMobileAberto, mudarAba, carregando, isDarkMode, toggleTheme, regraAtiva, salvarRegra,
             form, salvarRegistro, mensagemSucesso, modalEdicao, abrirEdicao, salvarEdicao,
-            visaoMetas, metas, salvarConfiguracoes, totalProducao, totalEstoque, percentualProducao, percentualEstoque,
+            visaoMetas, metas, salvarConfiguracoes, 
+            totalProducao, totalEstoque, percentualProducao, percentualEstoque, limiteProducao, limiteEstoque,
             registros, abaHistorico, filtros, historicoFiltrado, limparFiltros, deletarRegistro,
             listaCausas, novaCausa, adicionarCausa, removerCausa,
             listaResponsaveis, novoColaborador, adicionarColaborador, removerColaborador, statusEquipe
