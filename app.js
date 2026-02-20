@@ -1,8 +1,7 @@
 import { createApp, ref, reactive, computed, watch, nextTick, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
 import { db } from './firebase-config.js'; 
-import { collection, addDoc, onSnapshot, query, orderBy, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, addDoc, onSnapshot, query, orderBy, updateDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Função auxiliar para gerar a Data Local Atual no formato do input 'datetime-local' (YYYY-MM-DDTHH:mm)
 const gerarDataAtualInput = () => {
     const agora = new Date();
     const offset = agora.getTimezoneOffset() * 60000;
@@ -19,7 +18,6 @@ createApp({
         const carregando = ref(true);
         const chartInstance = ref(null);
 
-        // Dark Mode
         const isDarkMode = ref(localStorage.getItem('qc_theme') === 'dark');
         const toggleTheme = () => {
             isDarkMode.value = !isDarkMode.value;
@@ -29,24 +27,22 @@ createApp({
         };
         const aplicarTema = () => document.documentElement.classList.toggle('dark', isDarkMode.value);
 
-        // NOVO: Regra do Switch
-        const regraAtiva = ref(localStorage.getItem('qc_regraAtiva') !== 'false'); // Padrão: ligado (true)
+        const regraAtiva = ref(localStorage.getItem('qc_regraAtiva') !== 'false');
         const salvarRegra = () => localStorage.setItem('qc_regraAtiva', regraAtiva.value);
 
-        // Filtros e Formulários
         const filtros = reactive({ causa: '', responsavel: '' });
         const form = reactive({ local: '', causa: '', responsavel: '', quantidade: 1, dataOcorrencia: gerarDataAtualInput() });
         const registros = ref([]);
 
-        // NOVO: Controle do Modal de Edição
         const modalEdicao = reactive({ aberto: false, id: null, local: '', causa: '', responsavel: '', quantidade: 1, dataOcorrencia: '' });
 
         const novaCausa = ref('');
         const novoColaborador = ref('');
 
-        const savedMetas = JSON.parse(localStorage.getItem('qc_metas')) || { producaoMensal: 30, producaoAnual: 360, estoqueMensal: 15, estoqueAnual: 180 };
-        const savedCausas = JSON.parse(localStorage.getItem('qc_causas')) || ['Nome do produto incorreto na caixa', 'Defeito: Luneta', 'Defeito: Almofada', 'Impressão ilegível / Falha na fita', 'Etiqueta rasgada ou amassada'];
-        const savedResponsaveis = JSON.parse(localStorage.getItem('qc_responsaveis')) || ['João Silva', 'Maria Oliveira', 'Carlos Souza', 'Ana Paula', 'Líder Equipe 1'];
+        // DADOS LIMPOS: Agora iniciam totalmente vazios ou zerados
+        const savedMetas = JSON.parse(localStorage.getItem('qc_metas')) || { producaoMensal: 0, producaoAnual: 0, estoqueMensal: 0, estoqueAnual: 0 };
+        const savedCausas = JSON.parse(localStorage.getItem('qc_causas')) || [];
+        const savedResponsaveis = JSON.parse(localStorage.getItem('qc_responsaveis')) || [];
 
         const metas = reactive(savedMetas);
         const listaCausas = ref(savedCausas);
@@ -63,7 +59,6 @@ createApp({
         const adicionarColaborador = () => { if(novoColaborador.value.trim()){ listaResponsaveis.value.push(novoColaborador.value.trim()); novoColaborador.value = ''; salvarConfiguracoes(); } };
         const removerColaborador = (index) => { listaResponsaveis.value.splice(index, 1); salvarConfiguracoes(); };
 
-        // BUSCA NO FIREBASE
         onMounted(() => {
             aplicarTema();
             const q = query(collection(db, "registros"), orderBy("timestamp", "desc"));
@@ -90,22 +85,15 @@ createApp({
         const mudarAba = (aba) => { currentTab.value = aba; menuMobileAberto.value = false; };
         const limparFiltros = () => { filtros.causa = ''; filtros.responsavel = ''; };
 
-        // NOVO: Salvar Registro com Data Específica
         const salvarRegistro = async () => {
             try {
-                const dataRegistro = new Date(form.dataOcorrencia); // Pega a data informada no input
-                
+                const dataRegistro = new Date(form.dataOcorrencia);
                 await addDoc(collection(db, "registros"), {
-                    local: form.local, 
-                    causa: form.causa, 
-                    responsavel: form.responsavel, 
-                    quantidade: form.quantidade, 
-                    timestamp: dataRegistro // Salva como objeto Date (Firestore converte para Timestamp)
+                    local: form.local, causa: form.causa, responsavel: form.responsavel, 
+                    quantidade: form.quantidade, timestamp: dataRegistro 
                 });
-                
                 form.local = ''; form.causa = ''; form.responsavel = ''; form.quantidade = 1; 
-                form.dataOcorrencia = gerarDataAtualInput(); // Reseta para a data atual
-                
+                form.dataOcorrencia = gerarDataAtualInput(); 
                 mensagemSucesso.value = true;
                 setTimeout(() => { mensagemSucesso.value = false; }, 2000);
             } catch (e) { console.error("Erro ao salvar: ", e); }
@@ -115,34 +103,22 @@ createApp({
             if(confirm("Deseja realmente excluir este registro?")) await deleteDoc(doc(db, "registros", id));
         };
 
-        // NOVO: Lógica de Edição
         const abrirEdicao = (reg) => {
-            modalEdicao.id = reg.id;
-            modalEdicao.local = reg.local;
-            modalEdicao.causa = reg.causa;
-            modalEdicao.responsavel = reg.responsavel;
-            modalEdicao.quantidade = reg.quantidade;
-            
-            // Converte a data do Firebase para o formato YYYY-MM-DDTHH:mm pro input HTML entender
+            modalEdicao.id = reg.id; modalEdicao.local = reg.local; modalEdicao.causa = reg.causa;
+            modalEdicao.responsavel = reg.responsavel; modalEdicao.quantidade = reg.quantidade;
             if(reg.timestampRaw) {
                 const d = reg.timestampRaw.toDate();
                 const offset = d.getTimezoneOffset() * 60000;
                 modalEdicao.dataOcorrencia = new Date(d.getTime() - offset).toISOString().slice(0, 16);
-            } else {
-                modalEdicao.dataOcorrencia = gerarDataAtualInput();
-            }
-            
+            } else { modalEdicao.dataOcorrencia = gerarDataAtualInput(); }
             modalEdicao.aberto = true;
         };
 
         const salvarEdicao = async () => {
             try {
                 await updateDoc(doc(db, "registros", modalEdicao.id), {
-                    local: modalEdicao.local,
-                    causa: modalEdicao.causa,
-                    responsavel: modalEdicao.responsavel,
-                    quantidade: modalEdicao.quantidade,
-                    timestamp: new Date(modalEdicao.dataOcorrencia)
+                    local: modalEdicao.local, causa: modalEdicao.causa, responsavel: modalEdicao.responsavel,
+                    quantidade: modalEdicao.quantidade, timestamp: new Date(modalEdicao.dataOcorrencia)
                 });
                 modalEdicao.aberto = false;
             } catch (e) { console.error("Erro ao editar: ", e); }
@@ -177,15 +153,22 @@ createApp({
                     status = "Advertência Verbal";
                     cor = "text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-800";
                 }
-
                 return { nome: resp, total, status, cor };
             }).sort((a, b) => b.total - a.total);
         });
 
         const totalProducao = computed(() => registros.value.filter(r => r.local === 'Produção').reduce((acc, r) => acc + (r.quantidade || 1), 0));
         const totalEstoque = computed(() => registros.value.filter(r => r.local === 'Estoque').reduce((acc, r) => acc + (r.quantidade || 1), 0));
-        const percentualProducao = computed(() => Math.min((totalProducao.value / (visaoMetas.value === 'mensal' ? metas.producaoMensal : metas.producaoAnual)) * 100, 100));
-        const percentualEstoque = computed(() => Math.min((totalEstoque.value / (visaoMetas.value === 'mensal' ? metas.estoqueMensal : metas.estoqueAnual)) * 100, 100));
+        
+        // Evita divisão por zero caso a meta não tenha sido preenchida ainda
+        const percentualProducao = computed(() => {
+            const meta = visaoMetas.value === 'mensal' ? metas.producaoMensal : metas.producaoAnual;
+            return meta > 0 ? Math.min((totalProducao.value / meta) * 100, 100) : 0;
+        });
+        const percentualEstoque = computed(() => {
+            const meta = visaoMetas.value === 'mensal' ? metas.estoqueMensal : metas.estoqueAnual;
+            return meta > 0 ? Math.min((totalEstoque.value / meta) * 100, 100) : 0;
+        });
 
         const historicoFiltrado = computed(() => {
             return registros.value.filter(reg => {
@@ -244,17 +227,12 @@ createApp({
         });
 
         return {
-            currentTab, menuMobileAberto, mudarAba, carregando,
-            isDarkMode, toggleTheme,
-            regraAtiva, salvarRegra, // Exporta a regra para o HTML
-            form, salvarRegistro, mensagemSucesso,
-            modalEdicao, abrirEdicao, salvarEdicao, // Exporta o CRUD completo
-            visaoMetas, metas, salvarConfiguracoes,
-            totalProducao, totalEstoque, percentualProducao, percentualEstoque,
+            currentTab, menuMobileAberto, mudarAba, carregando, isDarkMode, toggleTheme, regraAtiva, salvarRegra,
+            form, salvarRegistro, mensagemSucesso, modalEdicao, abrirEdicao, salvarEdicao,
+            visaoMetas, metas, salvarConfiguracoes, totalProducao, totalEstoque, percentualProducao, percentualEstoque,
             registros, abaHistorico, filtros, historicoFiltrado, limparFiltros, deletarRegistro,
             listaCausas, novaCausa, adicionarCausa, removerCausa,
-            listaResponsaveis, novoColaborador, adicionarColaborador, removerColaborador,
-            statusEquipe
+            listaResponsaveis, novoColaborador, adicionarColaborador, removerColaborador, statusEquipe
         }
     }
 }).mount('#app')
