@@ -1,8 +1,8 @@
 import { createApp, ref, reactive, computed, watch, nextTick, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
 import { db } from './firebase-config.js'; 
-import { collection, addDoc, onSnapshot, query, updateDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+// IMPORTANTE: Adicionado setDoc para salvar as configurações
+import { collection, addDoc, onSnapshot, query, updateDoc, deleteDoc, doc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Função auxiliar para gerar a Data Local Atual no formato do input 'datetime-local'
 const gerarDataAtualInput = () => {
     const agora = new Date();
     const offset = agora.getTimezoneOffset() * 60000;
@@ -14,12 +14,12 @@ createApp({
         const currentTab = ref('dashboard');
         const menuMobileAberto = ref(false);
         const mensagemSucesso = ref(false);
-        const visaoMetas = ref('mensal'); // 'mensal' ou 'anual'
+        const visaoMetas = ref('mensal'); 
         const abaHistorico = ref('Produção');
         const carregando = ref(true);
         const chartInstance = ref(null);
 
-        // Dark Mode
+        // Dark Mode: Mantido no localStorage propositalmente (é uma preferência de tela do dispositivo do usuário, não da empresa)
         const isDarkMode = ref(localStorage.getItem('qc_theme') === 'dark');
         const toggleTheme = () => {
             isDarkMode.value = !isDarkMode.value;
@@ -29,51 +29,83 @@ createApp({
         };
         const aplicarTema = () => document.documentElement.classList.toggle('dark', isDarkMode.value);
 
-        // Regra do Switch (Gestão de Consequências)
-        const regraAtiva = ref(localStorage.getItem('qc_regraAtiva') !== 'false');
-        const salvarRegra = () => localStorage.setItem('qc_regraAtiva', regraAtiva.value);
+        // Variáveis de Configuração (agora vazias por padrão, serão preenchidas pelo Firebase)
+        const regraAtiva = ref(true);
+        const metas = reactive({ producaoMensal: 0, producaoAnual: 0, estoqueMensal: 0, estoqueAnual: 0 });
+        const listaCausas = ref([]);
+        const listaResponsaveis = ref([]);
 
         // Formulários e Filtros
         const filtros = reactive({ causa: '', responsavel: '' });
         const form = reactive({ local: '', causa: '', responsavel: '', quantidade: 1, dataOcorrencia: gerarDataAtualInput() });
         const registros = ref([]);
-
-        // Modal de Edição
         const modalEdicao = reactive({ aberto: false, id: null, local: '', causa: '', responsavel: '', quantidade: 1, dataOcorrencia: '' });
 
         const novaCausa = ref('');
         const novoColaborador = ref('');
 
-        // Dados Locais (Configurações)
-        const savedMetas = JSON.parse(localStorage.getItem('qc_metas')) || { producaoMensal: 0, producaoAnual: 0, estoqueMensal: 0, estoqueAnual: 0 };
-        const savedCausas = JSON.parse(localStorage.getItem('qc_causas')) || [];
-        const savedResponsaveis = JSON.parse(localStorage.getItem('qc_responsaveis')) || [];
-
-        const metas = reactive(savedMetas);
-        const listaCausas = ref(savedCausas);
-        const listaResponsaveis = ref(savedResponsaveis);
-
-        const salvarConfiguracoes = () => {
-            localStorage.setItem('qc_metas', JSON.stringify(metas));
-            localStorage.setItem('qc_causas', JSON.stringify(listaCausas.value));
-            localStorage.setItem('qc_responsaveis', JSON.stringify(listaResponsaveis.value));
-            if (currentTab.value === 'dashboard') setTimeout(() => renderizarGraficoEvolucao(), 50);
+        // =========================================================================
+        // FUNÇÃO DE SALVAMENTO NO FIREBASE (Substitui o LocalStorage)
+        // =========================================================================
+        const salvarConfiguracoes = async () => {
+            try {
+                // Salva todos os parâmetros no documento 'geral' da coleção 'configuracoes'
+                await setDoc(doc(db, "configuracoes", "geral"), {
+                    regraAtiva: regraAtiva.value,
+                    metas: { ...metas },
+                    causas: listaCausas.value,
+                    responsaveis: listaResponsaveis.value
+                }, { merge: true }); // Merge true evita apagar outros dados acidentalmente
+                
+                if (currentTab.value === 'dashboard') setTimeout(() => renderizarGraficoEvolucao(), 50);
+            } catch (e) {
+                console.error("Erro ao salvar configurações no Firebase:", e);
+            }
         };
 
-        const adicionarCausa = () => { if(novaCausa.value.trim()){ listaCausas.value.push(novaCausa.value.trim()); novaCausa.value = ''; salvarConfiguracoes(); } };
+        const salvarRegra = () => salvarConfiguracoes();
+
+        const adicionarCausa = () => { 
+            if(novaCausa.value.trim()){ 
+                listaCausas.value.push(novaCausa.value.trim()); 
+                novaCausa.value = ''; 
+                salvarConfiguracoes(); 
+            } 
+        };
         const removerCausa = (index) => { listaCausas.value.splice(index, 1); salvarConfiguracoes(); };
-        const adicionarColaborador = () => { if(novoColaborador.value.trim()){ listaResponsaveis.value.push(novoColaborador.value.trim()); novoColaborador.value = ''; salvarConfiguracoes(); } };
+        
+        const adicionarColaborador = () => { 
+            if(novoColaborador.value.trim()){ 
+                listaResponsaveis.value.push(novoColaborador.value.trim()); 
+                novoColaborador.value = ''; 
+                salvarConfiguracoes(); 
+            } 
+        };
         const removerColaborador = (index) => { listaResponsaveis.value.splice(index, 1); salvarConfiguracoes(); };
 
         // =========================================================================
-        // BUSCA NO FIREBASE (CORRIGIDA PARA NÃO ESCONDER DADOS ANTIGOS)
+        // BUSCA NO FIREBASE (Registros + Configurações)
         // =========================================================================
         onMounted(() => {
             aplicarTema();
             
-            // Removido o orderBy para garantir que o Firebase traga TODOS os documentos (mesmo os quebrados/antigos)
+            // 1. Monitorar as Configurações em Tempo Real
+            const docConfig = doc(db, "configuracoes", "geral");
+            onSnapshot(docConfig, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    if (data.regraAtiva !== undefined) regraAtiva.value = data.regraAtiva;
+                    if (data.metas) Object.assign(metas, data.metas);
+                    if (data.causas) listaCausas.value = data.causas;
+                    if (data.responsaveis) listaResponsaveis.value = data.responsaveis;
+                } else {
+                    // Se o documento não existir (primeira vez abrindo o app no Firebase), cria ele
+                    salvarConfiguracoes();
+                }
+            });
+
+            // 2. Monitorar os Registros
             const q = query(collection(db, "registros"));
-            
             onSnapshot(q, (snapshot) => {
                 const dadosMapeados = [];
                 
@@ -81,7 +113,7 @@ createApp({
                     const dado = doc.data();
                     let dataFormatada = 'Sem data';
                     let timestampRaw = dado.timestamp || null;
-                    let tempoMilisegundos = 0; // Usado para ordenar
+                    let tempoMilisegundos = 0; 
                     
                     if(timestampRaw) {
                         const dataObj = timestampRaw.toDate();
@@ -97,13 +129,11 @@ createApp({
                         quantidade: dado.quantidade || 1, 
                         dataHoraFormatada: dataFormatada, 
                         timestampRaw: timestampRaw,
-                        ordenacaoTempo: tempoMilisegundos // Campo de apoio para organizar a lista
+                        ordenacaoTempo: tempoMilisegundos
                     });
                 });
 
-                // Ordena os dados diretamente no navegador (do mais recente para o mais antigo)
                 dadosMapeados.sort((a, b) => b.ordenacaoTempo - a.ordenacaoTempo);
-
                 registros.value = dadosMapeados;
                 carregando.value = false;
                 
@@ -111,7 +141,9 @@ createApp({
             });
         });
 
-        // Navegação e Lançamentos
+        // =========================================================================
+        // LÓGICA EXISTENTE DO APP (Sem alterações abaixo)
+        // =========================================================================
         const mudarAba = (aba) => { currentTab.value = aba; menuMobileAberto.value = false; };
         const limparFiltros = () => { filtros.causa = ''; filtros.responsavel = ''; };
 
@@ -138,7 +170,6 @@ createApp({
             if(confirm("Deseja realmente excluir este registro?")) await deleteDoc(doc(db, "registros", id));
         };
 
-        // Lógica de Edição
         const abrirEdicao = (reg) => {
             modalEdicao.id = reg.id; 
             modalEdicao.local = reg.local; 
@@ -169,7 +200,6 @@ createApp({
             } catch (e) { console.error("Erro ao editar: ", e); }
         };
 
-        // Inteligência: Status da Equipe (Regra de 60 dias)
         const statusEquipe = computed(() => {
             const dataLimite = new Date();
             dataLimite.setDate(dataLimite.getDate() - 60);
@@ -203,7 +233,6 @@ createApp({
             }).sort((a, b) => b.total - a.total);
         });
 
-        // Inteligência de Datas para os Cards (Mensal VS Anual)
         const registrosFiltradosPorVisao = computed(() => {
             const dataAtual = new Date();
             const mesAtual = dataAtual.getMonth();
@@ -238,7 +267,6 @@ createApp({
             });
         });
 
-        // Gráfico Analítico
         const renderizarGraficoEvolucao = () => {
             const ctx = document.getElementById('evolucaoChart');
             if (!ctx) return;
@@ -246,7 +274,6 @@ createApp({
 
             const agrupamentoPorMes = {};
             
-            // Reverte a lista de volta para o Chart (para desenhar da esquerda p/ direita no tempo)
             [...registros.value].reverse().forEach(reg => {
                 if(!reg.timestampRaw) return;
                 const d = reg.timestampRaw.toDate();
