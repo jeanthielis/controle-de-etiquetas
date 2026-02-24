@@ -27,7 +27,9 @@ createApp({
             isDarkMode.value = !isDarkMode.value;
             localStorage.setItem('qc_theme', isDarkMode.value ? 'dark' : 'light');
             document.documentElement.classList.toggle('dark', isDarkMode.value);
-            if (currentTab.value === 'dashboard') setTimeout(() => renderizarGraficoEvolucao(), 50);
+            if (currentTab.value === 'dashboard') {
+                setTimeout(() => renderizarGraficoEvolucao(), 50);
+            }
         };
 
         const regraAtiva = ref(true);
@@ -36,7 +38,14 @@ createApp({
         const listaResponsaveis = ref([]);
 
         const filtros = reactive({ causa: '', responsavel: '' });
-        const form = reactive({ local: '', causa: '', responsavel: '', quantidade: 1, dataOcorrencia: gerarDataAtualInput(), contabilizar: true });
+        const form = reactive({ 
+            local: '', 
+            causa: '', 
+            responsavel: '', 
+            quantidade: 1, 
+            dataOcorrencia: gerarDataAtualInput(), 
+            contabilizar: true 
+        });
         
         const registrosGerais = ref([]);
         const registros = computed(() => {
@@ -44,7 +53,11 @@ createApp({
             return registrosGerais.value.filter(r => r.fabrica === usuarioLogado.value.fabricaAtual);
         });
 
-        const modalEdicao = reactive({ aberto: false, id: null, local: '', causa: '', responsavel: '', quantidade: 1, dataOcorrencia: '', contabilizar: true });
+        const modalEdicao = reactive({ 
+            aberto: false, id: null, local: '', causa: '', 
+            responsavel: '', quantidade: 1, dataOcorrencia: '', contabilizar: true 
+        });
+        
         const modalRaioX = reactive({ aberto: false, nome: '', total: 0, causaFrequente: '', ultimos: [] });
 
         const novaCausa = ref(''); 
@@ -54,8 +67,13 @@ createApp({
             erroLogin.value = ''; 
             carregando.value = true;
             try {
-                const q = query(collection(db, "usuarios"), where("email", "==", loginForm.email), where("senha", "==", loginForm.senha));
+                const q = query(
+                    collection(db, "usuarios"), 
+                    where("email", "==", loginForm.email), 
+                    where("senha", "==", loginForm.senha)
+                );
                 const querySnapshot = await getDocs(q);
+                
                 if (!querySnapshot.empty) {
                     const docUser = querySnapshot.docs[0]; 
                     const data = docUser.data();
@@ -110,8 +128,8 @@ createApp({
             const q = query(collection(db, "registros"));
             onSnapshot(q, (snapshot) => {
                 const dadosMapeados = [];
-                snapshot.forEach((doc) => {
-                    const dado = doc.data();
+                snapshot.forEach((docSnap) => {
+                    const dado = docSnap.data();
                     let timestampRaw = dado.timestamp || null;
                     let tempoMilisegundos = 0;
                     let dataFormatada = '';
@@ -127,7 +145,7 @@ createApp({
                     }
 
                     dadosMapeados.push({ 
-                        id: doc.id, 
+                        id: docSnap.id, 
                         local: dado.local, 
                         causa: dado.causa, 
                         responsavel: dado.responsavel, 
@@ -152,15 +170,52 @@ createApp({
             if(usuarioLogado.value) iniciarMonitoramentoBanco();
         });
 
-        const salvarConfiguracoes = async () => { await setDoc(doc(db, "configuracoes", "geral"), { regraAtiva: regraAtiva.value, metas: { ...metas }, causas: listaCausas.value, responsaveis: listaResponsaveis.value }, { merge: true }); };
+        const salvarConfiguracoes = async () => { 
+            await setDoc(doc(db, "configuracoes", "geral"), { 
+                regraAtiva: regraAtiva.value, 
+                metas: { ...metas }, 
+                causas: listaCausas.value, 
+                responsaveis: listaResponsaveis.value 
+            }, { merge: true }); 
+        };
+        
         const salvarRegra = () => salvarConfiguracoes();
-        const adicionarCausa = () => { if(novaCausa.value.trim()){ listaCausas.value.push(novaCausa.value.trim()); novaCausa.value = ''; salvarConfiguracoes(); } };
-        const removerCausa = (index) => { listaCausas.value.splice(index, 1); salvarConfiguracoes(); };
-        const adicionarColaborador = () => { if(novoColaborador.value.trim()){ listaResponsaveis.value.push(novoColaborador.value.trim()); novoColaborador.value = ''; salvarConfiguracoes(); } };
-        const removerColaborador = (index) => { listaResponsaveis.value.splice(index, 1); salvarConfiguracoes(); };
+        
+        const adicionarCausa = () => { 
+            if(novaCausa.value.trim()){ 
+                listaCausas.value.push(novaCausa.value.trim()); 
+                novaCausa.value = ''; 
+                salvarConfiguracoes(); 
+            } 
+        };
+        
+        const removerCausa = (index) => { 
+            listaCausas.value.splice(index, 1); 
+            salvarConfiguracoes(); 
+        };
+        
+        const adicionarColaborador = () => { 
+            if(novoColaborador.value.trim()){ 
+                listaResponsaveis.value.push(novoColaborador.value.trim()); 
+                novoColaborador.value = ''; 
+                salvarConfiguracoes(); 
+            } 
+        };
+        
+        const removerColaborador = (index) => { 
+            listaResponsaveis.value.splice(index, 1); 
+            salvarConfiguracoes(); 
+        };
 
-        const mudarAba = (aba) => { currentTab.value = aba; menuMobileAberto.value = false; };
-        const limparFiltros = () => { filtros.causa = ''; filtros.responsavel = ''; };
+        const mudarAba = (aba) => { 
+            currentTab.value = aba; 
+            menuMobileAberto.value = false; 
+        };
+        
+        const limparFiltros = () => { 
+            filtros.causa = ''; 
+            filtros.responsavel = ''; 
+        };
 
         const salvarRegistro = async () => {
             try {
@@ -173,19 +228,45 @@ createApp({
                     contabilizar: form.contabilizar,
                     fabrica: usuarioLogado.value.fabricaAtual
                 });
-                form.local = ''; form.causa = ''; form.responsavel = ''; form.quantidade = 1; form.dataOcorrencia = gerarDataAtualInput(); form.contabilizar = true; 
-                mensagemSucesso.value = true; setTimeout(() => { mensagemSucesso.value = false; }, 2000);
-            } catch (e) { console.error(e); }
+                
+                form.local = ''; 
+                form.causa = ''; 
+                form.responsavel = ''; 
+                form.quantidade = 1; 
+                form.dataOcorrencia = gerarDataAtualInput(); 
+                form.contabilizar = true; 
+                
+                mensagemSucesso.value = true; 
+                setTimeout(() => { mensagemSucesso.value = false; }, 2000);
+            } catch (e) { 
+                console.error(e); 
+            }
         };
 
-        const deletarRegistro = async (id) => { if(confirm("Excluir este registro?")) await deleteDoc(doc(db, "registros", id)); };
+        const deletarRegistro = async (id) => { 
+            if(confirm("Excluir este registro?")) {
+                await deleteDoc(doc(db, "registros", id)); 
+            }
+        };
 
         const abrirEdicao = (reg) => {
-            modalEdicao.id = reg.id; modalEdicao.local = reg.local; modalEdicao.causa = reg.causa; modalEdicao.responsavel = reg.responsavel; modalEdicao.quantidade = reg.quantidade; modalEdicao.contabilizar = reg.contabilizar;
+            modalEdicao.id = reg.id; 
+            modalEdicao.local = reg.local; 
+            modalEdicao.causa = reg.causa; 
+            modalEdicao.responsavel = reg.responsavel; 
+            modalEdicao.quantidade = reg.quantidade; 
+            modalEdicao.contabilizar = reg.contabilizar;
             modalEdicao.aberto = true;
         };
+        
         const salvarEdicao = async () => {
-            await updateDoc(doc(db, "registros", modalEdicao.id), { local: modalEdicao.local, causa: modalEdicao.causa, responsavel: modalEdicao.responsavel, quantidade: modalEdicao.quantidade, contabilizar: modalEdicao.contabilizar });
+            await updateDoc(doc(db, "registros", modalEdicao.id), { 
+                local: modalEdicao.local, 
+                causa: modalEdicao.causa, 
+                responsavel: modalEdicao.responsavel, 
+                quantidade: modalEdicao.quantidade, 
+                contabilizar: modalEdicao.contabilizar 
+            });
             modalEdicao.aberto = false;
         };
 
@@ -197,39 +278,78 @@ createApp({
         };
 
         const statusEquipe = computed(() => {
-            const dataLimite = new Date(); dataLimite.setDate(dataLimite.getDate() - 60);
+            const dataLimite = new Date(); 
+            dataLimite.setDate(dataLimite.getDate() - 60);
+            
             return listaResponsaveis.value.map(resp => {
-                const registrosRecentes = registros.value.filter(r => r.contabilizar !== false && r.timestampRaw && r.responsavel === resp && r.timestampRaw.toDate() >= dataLimite);
-                let total = 0; let erroDeVez = false;
-                registrosRecentes.forEach(r => { total += (r.quantidade || 1); if ((r.quantidade || 1) >= 3) erroDeVez = true; });
+                const registrosRecentes = registros.value.filter(r => 
+                    r.contabilizar !== false && 
+                    r.timestampRaw && 
+                    r.responsavel === resp && 
+                    r.timestampRaw.toDate() >= dataLimite
+                );
+                
+                let total = 0; 
+                let erroDeVez = false;
+                
+                registrosRecentes.forEach(r => { 
+                    total += (r.quantidade || 1); 
+                    if ((r.quantidade || 1) >= 3) erroDeVez = true; 
+                });
 
-                let status = "Sem advertência"; let cor = "text-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800";
-                if (erroDeVez || total >= 3) { status = "Advertência Escrita"; cor = "text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-300 dark:border-rose-800"; } 
-                else if (total === 2) { status = "Advertência Verbal"; cor = "text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-800"; }
+                let status = "Sem advertência"; 
+                let cor = "text-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800";
+                
+                if (erroDeVez || total >= 3) { 
+                    status = "Advertência Escrita"; 
+                    cor = "text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-300 dark:border-rose-800"; 
+                } else if (total === 2) { 
+                    status = "Advertência Verbal"; 
+                    cor = "text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-800"; 
+                }
+                
                 return { nome: resp, total, status, cor };
             }).sort((a, b) => b.total - a.total);
         });
 
         const destaquesEquipe = computed(() => {
-            const dataLimite = new Date(); dataLimite.setDate(dataLimite.getDate() - 60);
+            const dataLimite = new Date(); 
+            dataLimite.setDate(dataLimite.getDate() - 60);
+            
             return listaResponsaveis.value.filter(resp => {
-                return !registros.value.some(r => r.contabilizar !== false && r.timestampRaw && r.responsavel === resp && r.timestampRaw.toDate() >= dataLimite);
+                return !registros.value.some(r => 
+                    r.contabilizar !== false && 
+                    r.timestampRaw && 
+                    r.responsavel === resp && 
+                    r.timestampRaw.toDate() >= dataLimite
+                );
             });
         });
 
         const limiteProducao = computed(() => visaoMetas.value === 'mensal' ? metas.producaoMensal : metas.producaoAnual);
         const limiteEstoque = computed(() => visaoMetas.value === 'mensal' ? metas.estoqueMensal : metas.estoqueAnual);
+        
         const totalProducao = computed(() => registros.value.filter(r => r.local === 'Produção').reduce((acc, r) => acc + (r.quantidade || 1), 0));
         const totalEstoque = computed(() => registros.value.filter(r => r.local === 'Estoque').reduce((acc, r) => acc + (r.quantidade || 1), 0));
+        
         const percentualProducao = computed(() => limiteProducao.value > 0 ? (totalProducao.value / limiteProducao.value) * 100 : 0);
         const percentualEstoque = computed(() => limiteEstoque.value > 0 ? (totalEstoque.value / limiteEstoque.value) * 100 : 0);
-        const historicoFiltrado = computed(() => registros.value.filter(reg => reg.local === abaHistorico.value && (filtros.causa === '' || reg.causa === filtros.causa) && (filtros.responsavel === '' || reg.responsavel === filtros.responsavel)));
+        
+        const historicoFiltrado = computed(() => {
+            return registros.value.filter(reg => 
+                reg.local === abaHistorico.value && 
+                (filtros.causa === '' || reg.causa === filtros.causa) && 
+                (filtros.responsavel === '' || reg.responsavel === filtros.responsavel)
+            );
+        });
 
         const renderizarGraficoEvolucao = () => {
             const ctx = document.getElementById('evolucaoChart');
             if (!ctx) return;
             if (chartInstance.value) chartInstance.value.destroy();
+            
             const agrupamentoPorMes = {};
+            
             [...registros.value].reverse().forEach(reg => {
                 if(!reg.timestampRaw) return;
                 const d = reg.timestampRaw.toDate(); 
@@ -238,24 +358,50 @@ createApp({
                 const mesAno = `${mes}/${ano}`;
                 
                 if (!agrupamentoPorMes[mesAno]) agrupamentoPorMes[mesAno] = { producao: 0, estoque: 0 };
-                if (reg.local === 'Produção') agrupamentoPorMes[mesAno].producao += (reg.quantidade || 1);
-                else if (reg.local === 'Estoque') agrupamentoPorMes[mesAno].estoque += (reg.quantidade || 1);
+                
+                if (reg.local === 'Produção') {
+                    agrupamentoPorMes[mesAno].producao += (reg.quantidade || 1);
+                } else if (reg.local === 'Estoque') {
+                    agrupamentoPorMes[mesAno].estoque += (reg.quantidade || 1);
+                }
             });
+            
             const mesesLabels = Object.keys(agrupamentoPorMes);
-            const nomesMeses = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
+            const nomesMeses = {
+                '01':'Jan', '02':'Fev', '03':'Mar', '04':'Abr', 
+                '05':'Mai', '06':'Jun', '07':'Jul', '08':'Ago', 
+                '09':'Set', '10':'Out', '11':'Nov', '12':'Dez'
+            };
+            
             const bgProducao = mesesLabels.map(m => agrupamentoPorMes[m].producao > metas.producaoMensal ? '#ef4444' : '#10b981');
             const bgEstoque = mesesLabels.map(m => agrupamentoPorMes[m].estoque > metas.estoqueMensal ? '#ef4444' : '#10b981');
             
             const tc = isDarkMode.value ? '#94a3b8' : '#64748b'; 
             const gc = isDarkMode.value ? '#334155' : '#f1f5f9';
 
+            const labelsFormatadas = mesesLabels.map(ma => {
+                const mesNum = ma.split('/')[0];
+                const anoCurto = ma.split('/')[1].substring(2);
+                return `${nomesMeses[mesNum]}/${anoCurto}`;
+            });
+
             chartInstance.value = new Chart(ctx, { 
                 type: 'bar', 
                 data: { 
-                    labels: mesesLabels.map(ma => `${nomesMeses[ma.split('/')[0]]}/${ma.split('/')[1].substring(2)}`), 
+                    labels: labelsFormatadas, 
                     datasets: [
-                        { label: 'Produção', data: mesesLabels.map(m => agrupamentoPorMes[m].producao), backgroundColor: bgProducao, borderRadius: 4 }, 
-                        { label: 'Estoque', data: mesesLabels.map(m => agrupamentoPorMes[m].estoque), backgroundColor: bgEstoque, borderRadius: 4 }
+                        { 
+                            label: 'Produção', 
+                            data: mesesLabels.map(m => agrupamentoPorMes[m].producao), 
+                            backgroundColor: bgProducao, 
+                            borderRadius: 4 
+                        }, 
+                        { 
+                            label: 'Estoque', 
+                            data: mesesLabels.map(m => agrupamentoPorMes[m].estoque), 
+                            backgroundColor: bgEstoque, 
+                            borderRadius: 4 
+                        }
                     ] 
                 }, 
                 options: { 
@@ -265,17 +411,29 @@ createApp({
                         x: { ticks: { color: tc }, grid: { color: gc, drawBorder: false } }, 
                         y: { ticks: { color: tc }, grid: { color: gc, drawBorder: false } } 
                     }, 
-                    plugins: { legend: { labels: { color: tc } } } 
+                    plugins: { 
+                        legend: { labels: { color: tc } } 
+                    } 
                 } 
             });
         };
 
-        watch(currentTab, (newTab) => { if (newTab === 'dashboard') setTimeout(renderizarGraficoEvolucao, 350); });
+        watch(currentTab, (newTab) => { 
+            if (newTab === 'dashboard') {
+                setTimeout(renderizarGraficoEvolucao, 350); 
+            }
+        });
 
         return {
-            usuarioLogado, loginForm, erroLogin, fazerLogin, fazerLogout, salvarSessao, currentTab, menuMobileAberto, mudarAba, carregando, isDarkMode, toggleTheme, regraAtiva, salvarRegra,
-            form, salvarRegistro, mensagemSucesso, modalEdicao, abrirEdicao, salvarEdicao, visaoMetas, metas, salvarConfiguracoes, totalProducao, totalEstoque, percentualProducao, percentualEstoque, limiteProducao, limiteEstoque,
-            registros, abaHistorico, filtros, historicoFiltrado, limparFiltros, deletarRegistro, listaCausas, novaCausa, adicionarCausa, removerCausa, listaResponsaveis, novoColaborador, adicionarColaborador, removerColaborador, statusEquipe, destaquesEquipe, modalRaioX, abrirRaioX
+            usuarioLogado, loginForm, erroLogin, fazerLogin, fazerLogout, salvarSessao, 
+            currentTab, menuMobileAberto, mudarAba, carregando, isDarkMode, toggleTheme, 
+            regraAtiva, salvarRegra, form, salvarRegistro, mensagemSucesso, modalEdicao, 
+            abrirEdicao, salvarEdicao, visaoMetas, metas, salvarConfiguracoes, totalProducao, 
+            totalEstoque, percentualProducao, percentualEstoque, limiteProducao, limiteEstoque,
+            registros, abaHistorico, filtros, historicoFiltrado, limparFiltros, deletarRegistro, 
+            listaCausas, novaCausa, adicionarCausa, removerCausa, listaResponsaveis, 
+            novoColaborador, adicionarColaborador, removerColaborador, statusEquipe, 
+            destaquesEquipe, modalRaioX, abrirRaioX
         }
     }
 }).mount('#app')
