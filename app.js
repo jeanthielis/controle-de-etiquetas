@@ -47,27 +47,31 @@ createApp({
             return registrosGerais.value.filter(r => r.fabrica === usuarioLogado.value.fabricaAtual);
         });
 
-        // FILTRO PARA DROPDOWNS (Exibe apenas os colaboradores da Fábrica Selecionada no Menu)
+        // FILTRO BLINDADO PARA DROPDOWNS: Garante que nunca fique vazio por falta de tag
         const colaboradoresFiltrados = computed(() => {
             if (!usuarioLogado.value || !listaResponsaveis.value) return [];
+            
+            const fabricaAtual = usuarioLogado.value.fabricaAtual || 'Fábrica 2';
+            
             return listaResponsaveis.value
-                .filter(c => (c.fabricas || []).includes(usuarioLogado.value.fabricaAtual))
+                .filter(c => {
+                    const fabs = (c.fabricas && c.fabricas.length > 0) ? c.fabricas : ['Fábrica 2'];
+                    return fabs.includes(fabricaAtual);
+                })
                 .map(c => c.nome);
         });
 
-        // FILTRO PARA PAINEL DE CONTROLE (Exibe os colaboradores permitidos pelo Nível de Acesso)
         const responsaveisDoUsuario = computed(() => {
             if (!usuarioLogado.value || !listaResponsaveis.value) return [];
-            
-            // Coordenador vê todos (pois tem acesso a todas as fábricas atreladas a ele)
             if (usuarioLogado.value.nivelAcesso === 'Coordenador') {
                 return listaResponsaveis.value;
             }
             
-            // Supervisores veem apenas os que operam nas fábricas deles
-            return listaResponsaveis.value.filter(colab => 
-                (colab.fabricas || []).some(f => (usuarioLogado.value.fabricas || []).includes(f))
-            );
+            const userFabs = usuarioLogado.value.fabricas || ['Fábrica 2'];
+            return listaResponsaveis.value.filter(colab => {
+                const fabs = (colab.fabricas && colab.fabricas.length > 0) ? colab.fabricas : ['Fábrica 2'];
+                return fabs.some(f => userFabs.includes(f));
+            });
         });
 
         const modalEdicao = reactive({ 
@@ -110,9 +114,13 @@ createApp({
                     if (data.regraAtiva !== undefined) regraAtiva.value = data.regraAtiva;
                     if (data.metas) Object.assign(metas, data.metas);
                     if (data.causas) listaCausas.value = data.causas;
+                    
+                    // AUTO-REPARO: Se os dados vierem em string ou sem a array, corrige e força para o padrão
                     if (data.responsaveis) {
                         listaResponsaveis.value = data.responsaveis.map(item => {
-                            return typeof item === 'string' ? { nome: item, fabricas: ['Fábrica 2'] } : item;
+                            if (typeof item === 'string') return { nome: item, fabricas: ['Fábrica 2'] };
+                            if (!item.fabricas || item.fabricas.length === 0) item.fabricas = ['Fábrica 2'];
+                            return item;
                         });
                     }
                 }
@@ -123,8 +131,6 @@ createApp({
                 const dadosMapeados = [];
                 snapshot.forEach((docSnap) => {
                     const dado = docSnap.data();
-                    
-                    // Tratamento seguro de Data
                     let d = null;
                     if (dado.timestamp) {
                         d = dado.timestamp.toDate ? dado.timestamp.toDate() : new Date(dado.timestamp);
@@ -132,31 +138,23 @@ createApp({
                     let tempoMilisegundos = d ? d.getTime() : 0;
                     let dataFormatada = d ? `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}` : '';
 
-                    // AUTO-REPARO DE RESPONSÁVEL: 
-                    // Se durante a migração algo foi salvo como Objeto em vez de Texto, isso corrige na hora.
                     let nomeResponsavel = dado.responsavel;
                     if (typeof nomeResponsavel === 'object' && nomeResponsavel !== null) {
                         nomeResponsavel = nomeResponsavel.nome || 'Indefinido';
                     }
 
                     dadosMapeados.push({ 
-                        id: docSnap.id, 
-                        local: dado.local, 
-                        causa: dado.causa, 
-                        responsavel: nomeResponsavel || 'Indefinido', // Nome Limpo!
+                        id: docSnap.id, local: dado.local, causa: dado.causa, 
+                        responsavel: nomeResponsavel || 'Indefinido', 
                         quantidade: Number(dado.quantidade || 1), 
-                        dataHoraFormatada: dataFormatada, 
-                        dataObj: d, 
-                        ordenacaoTempo: tempoMilisegundos, 
-                        contabilizar: dado.contabilizar !== false, 
+                        dataHoraFormatada: dataFormatada, dataObj: d, 
+                        ordenacaoTempo: tempoMilisegundos, contabilizar: dado.contabilizar !== false, 
                         fabrica: dado.fabrica || 'Fábrica 1' 
                     });
                 });
-                
                 dadosMapeados.sort((a, b) => b.ordenacaoTempo - a.ordenacaoTempo);
                 registrosGerais.value = dadosMapeados;
                 carregando.value = false;
-                
                 if(currentTab.value === 'dashboard') setTimeout(renderizarGraficoEvolucao, 350);
             });
         };
@@ -178,20 +176,13 @@ createApp({
                     nome: formColaborador.nome.trim(),
                     fabricas: [...formColaborador.fabricas]
                 }); 
-                formColaborador.nome = ''; 
-                formColaborador.fabricas = [];
-                salvarConfiguracoes(); 
-            } else {
-                alert("Preencha o nome e marque pelo menos uma fábrica.");
-            }
+                formColaborador.nome = ''; formColaborador.fabricas = []; salvarConfiguracoes(); 
+            } else { alert("Preencha o nome e marque pelo menos uma fábrica."); }
         };
         
         const removerColaborador = (nomeColaborador) => { 
             const index = listaResponsaveis.value.findIndex(c => c.nome === nomeColaborador);
-            if (index !== -1) {
-                listaResponsaveis.value.splice(index, 1); 
-                salvarConfiguracoes(); 
-            }
+            if (index !== -1) { listaResponsaveis.value.splice(index, 1); salvarConfiguracoes(); }
         };
 
         const mudarAba = (aba) => { currentTab.value = aba; menuMobileAberto.value = false; };
@@ -217,7 +208,6 @@ createApp({
         };
 
         const deletarRegistro = async (id) => { if(confirm("Excluir?")) { await deleteDoc(doc(db, "registros", id)); } };
-        
         const abrirEdicao = (reg) => { 
             modalEdicao.id = reg.id; modalEdicao.local = reg.local; modalEdicao.causa = reg.causa; 
             modalEdicao.responsavel = reg.responsavel; modalEdicao.quantidade = reg.quantidade; modalEdicao.contabilizar = reg.contabilizar;
