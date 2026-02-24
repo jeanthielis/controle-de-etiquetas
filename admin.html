@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo - QualiTrack</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] } } }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        .input-modern { @apply w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 bg-slate-50 dark:bg-slate-900/50 text-slate-700 dark:text-slate-200 outline-none transition-all duration-200 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10; }
+    </style>
+</head>
+<body class="bg-[#f8fafc] dark:bg-[#0f172a] text-slate-800 dark:text-slate-100 transition-colors duration-300">
+
+<div id="admin-app" class="min-h-screen flex">
+    
+    <aside class="w-72 bg-[#080d1a] text-slate-300 flex flex-col shadow-2xl z-50 h-screen border-r border-slate-800">
+        <div class="p-8 text-center border-b border-slate-800/60">
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-rose-600 flex items-center justify-center shadow-lg"><i class="ph-bold ph-shield-check text-white text-xl"></i></div>
+                <h1 class="text-2xl font-extrabold tracking-tight text-white">Admin<span class="text-indigo-400">Track</span></h1>
+            </div>
+        </div>
+        
+        <nav class="flex-1 px-4 py-6 space-y-2">
+            <button @click="currentTab = 'dashboard'" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'dashboard', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'dashboard'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'dashboard' ? 'ph-fill ph-squares-four' : 'ph ph-squares-four'"></i> Visão Geral (Fábricas)</button>
+            <button @click="currentTab = 'usuarios'" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'usuarios', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'usuarios'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'usuarios' ? 'ph-fill ph-users-three' : 'ph ph-users-three'"></i> Gestão de Acessos</button>
+        </nav>
+
+        <div class="p-6 m-4 mt-0 bg-slate-800/40 rounded-2xl border border-slate-700/50 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-indigo-900/50 flex items-center justify-center border border-indigo-500/30 text-indigo-300"><i class="ph-fill ph-user-gear text-xl"></i></div>
+            <div class="overflow-hidden">
+                <p class="font-bold text-white text-sm truncate">Jean Braga</p>
+                <p class="text-xs text-indigo-400 truncate">Supervisor Geral</p>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-10 overflow-y-auto w-full h-screen relative">
+        
+        <div v-if="currentTab === 'dashboard'" key="dashboard" class="max-w-7xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Visão Geral da Operação</h2>
+                <p class="text-slate-500 mt-1">Acompanhamento consolidado das unidades fabris.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden">
+                    <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] bg-indigo-50 dark:bg-indigo-900/10"></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center"><i class="ph-fill ph-factory text-2xl"></i></div>
+                            <h3 class="font-bold text-xl text-slate-800 dark:text-white">Fábrica 1</h3>
+                        </div>
+                        <div class="flex items-end gap-3 mb-2">
+                            <span class="text-5xl font-black text-indigo-600">{{ totalFabrica1 }}</span>
+                            <span class="text-sm text-slate-500 font-medium mb-1">apontamentos (total)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden">
+                    <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] bg-rose-50 dark:bg-rose-900/10"></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center"><i class="ph-fill ph-factory text-2xl"></i></div>
+                            <h3 class="font-bold text-xl text-slate-800 dark:text-white">Fábrica 2</h3>
+                        </div>
+                        <div class="flex items-end gap-3 mb-2">
+                            <span class="text-5xl font-black text-rose-600">{{ totalFabrica2 }}</span>
+                            <span class="text-sm text-slate-500 font-medium mb-1">apontamentos (total)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-700">
+                <h3 class="font-bold text-slate-800 dark:text-white mb-6">Comparativo de Ocorrências</h3>
+                <div class="relative h-72 w-full"><canvas id="adminChart"></canvas></div>
+            </div>
+        </div>
+
+        <div v-else-if="currentTab === 'usuarios'" key="usuarios" class="max-w-6xl mx-auto">
+            <div class="mb-8 flex justify-between items-end">
+                <div>
+                    <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Gestão de Acessos</h2>
+                    <p class="text-slate-500 mt-1">Cadastre os colaboradores e defina em quais fábricas eles podem lançar dados.</p>
+                </div>
+                <button @click="abrirModalUsuario" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg hover:-translate-y-0.5 transition-all">
+                    <i class="ph-bold ph-plus"></i> Novo Usuário
+                </button>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-slate-500 text-xs font-bold uppercase">
+                            <th class="px-6 py-5">Nome do Colaborador</th>
+                            <th class="px-6 py-5">E-mail de Acesso</th>
+                            <th class="px-6 py-5">Permissões de Fábrica</th>
+                            <th class="px-6 py-5 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm divide-y divide-slate-100 dark:divide-slate-700">
+                        <tr v-for="user in usuarios" :key="user.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                            <td class="px-6 py-4 font-bold text-slate-700 dark:text-slate-200 flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">{{ user.nome.charAt(0) }}</div>
+                                {{ user.nome }}
+                            </td>
+                            <td class="px-6 py-4 text-slate-500">{{ user.email }}</td>
+                            <td class="px-6 py-4">
+                                <div class="flex gap-2">
+                                    <span v-if="user.fabricas.includes('Fábrica 1')" class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md text-xs font-bold">Fábrica 1</span>
+                                    <span v-if="user.fabricas.includes('Fábrica 2')" class="bg-rose-100 text-rose-700 px-2 py-1 rounded-md text-xs font-bold">Fábrica 2</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <button @click="deletarUsuario(user.id)" class="text-slate-400 hover:text-rose-500 p-2 rounded-lg transition-all" title="Excluir Usuário">
+                                    <i class="ph-fill ph-trash text-xl"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div v-if="modalAberto" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-lg w-full shadow-2xl border border-slate-200 dark:border-slate-700 relative">
+                <button @click="modalAberto = false" class="absolute top-6 right-6 text-slate-400 hover:text-rose-500"><i class="ph-bold ph-x text-2xl"></i></button>
+                <h3 class="text-2xl font-bold text-slate-800 dark:text-white mb-6">Cadastrar Usuário</h3>
+                
+                <form @submit.prevent="salvarUsuario">
+                    <div class="space-y-4 mb-6">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Nome Completo</label>
+                            <input type="text" v-model="form.nome" class="input-modern" required placeholder="Ex: Maciel Silva">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">E-mail de Acesso</label>
+                            <input type="email" v-model="form.email" class="input-modern" required placeholder="colaborador@qualitrack.com">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Senha</label>
+                            <input type="password" v-model="form.senha" class="input-modern" required placeholder="••••••••">
+                        </div>
+                        
+                        <div class="pt-4 border-t border-slate-100 dark:border-slate-700">
+                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">Vincular às Fábricas</label>
+                            <div class="flex gap-6">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" v-model="form.fabricas" value="Fábrica 1" class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500">
+                                    <span class="font-medium text-slate-600 dark:text-slate-300">Fábrica 1</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" v-model="form.fabricas" value="Fábrica 2" class="w-5 h-5 rounded text-rose-600 focus:ring-rose-500">
+                                    <span class="font-medium text-slate-600 dark:text-slate-300">Fábrica 2</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition-colors">Confirmar Cadastro</button>
+                </form>
+            </div>
+        </div>
+
+    </main>
+</div>
+<script type="module" src="./admin.js"></script>
+</body>
+</html>
