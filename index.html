@@ -3,21 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle Analítico de Qualidade</title>
+    <title>QualiTrack - Chão de Fábrica</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] }
-                }
-            }
-        }
+        tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] } } } }
     </script>
 
     <style>
@@ -30,507 +23,326 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        [v-cloak] { display: none; }
         
-        /* Input adaptável para Dark/Light */
-        .input-modern { 
-            @apply w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 bg-slate-50 dark:bg-slate-900/50 text-slate-700 dark:text-slate-200 outline-none transition-all duration-200 focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600; 
-        }
+        .input-modern { @apply w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 bg-slate-50 dark:bg-slate-900/50 text-slate-700 dark:text-slate-200 outline-none transition-all duration-200 focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600; }
     </style>
 </head>
 <body class="bg-[#f8fafc] dark:bg-[#0f172a] text-slate-800 dark:text-slate-100 transition-colors duration-300">
 
-<div id="app" class="min-h-screen flex flex-col md:flex-row">
+<div id="app" v-cloak>
     
-    <header class="md:hidden bg-[#0B1121] text-white p-4 flex justify-between items-center shadow-lg z-40 sticky top-0">
-        <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                <i class="ph-bold ph-chart-line-up text-white"></i>
-            </div>
-            <h1 class="text-lg font-bold tracking-tight">Quali<span class="text-indigo-400">Track</span></h1>
-        </div>
-        <button @click="menuMobileAberto = !menuMobileAberto" class="text-2xl p-1 text-slate-300 hover:text-white transition-colors focus:outline-none">
-            <i class="ph" :class="menuMobileAberto ? 'ph-x' : 'ph-list'"></i>
-        </button>
-    </header>
+    <div v-if="!usuarioLogado" class="min-h-screen flex items-center justify-center bg-[#f8fafc] dark:bg-[#0f172a] p-4 relative overflow-hidden">
+        <div class="absolute -top-32 -right-32 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-32 -left-32 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
 
-    <div v-if="menuMobileAberto" @click="menuMobileAberto = false" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-40 md:hidden transition-opacity"></div>
-
-    <aside :class="menuMobileAberto ? 'translate-x-0' : '-translate-x-full'" class="fixed md:relative inset-y-0 left-0 w-72 bg-[#0B1121] text-slate-300 flex flex-col shadow-2xl z-50 transform md:translate-x-0 transition-transform duration-300 ease-in-out h-full border-r border-slate-800">
-        <div class="p-8 text-center border-b border-slate-800/60">
-            <div class="flex items-center justify-center gap-3 mb-2">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30"><i class="ph-bold ph-chart-line-up text-white text-xl"></i></div>
-                <h1 class="text-2xl font-extrabold tracking-tight text-white">Quali<span class="text-indigo-400">Track</span></h1>
-            </div>
-            <p class="text-xs font-medium text-slate-500 uppercase tracking-widest mt-2">Indicadores de Qualidade</p>
-        </div>
-        
-        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-            <button @click="mudarAba('dashboard')" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'dashboard', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'dashboard'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'dashboard' ? 'ph-fill ph-chart-pie-slice' : 'ph ph-chart-pie-slice'"></i> Visão Analítica</button>
-            <button @click="mudarAba('consequencias')" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'consequencias', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'consequencias'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'consequencias' ? 'ph-fill ph-gavel' : 'ph ph-gavel'"></i> Gestão de Consequências</button>
-            <button @click="mudarAba('lancamento')" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'lancamento', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'lancamento'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'lancamento' ? 'ph-fill ph-plus-circle' : 'ph ph-plus-circle'"></i> Registrar Apontamento</button>
-            <button @click="mudarAba('historico')" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'historico', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'historico'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'historico' ? 'ph-fill ph-clock-counter-clockwise' : 'ph ph-clock-counter-clockwise'"></i> Histórico e Filtros</button>
-            <button @click="mudarAba('configuracoes')" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'configuracoes', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'configuracoes'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'configuracoes' ? 'ph-fill ph-sliders-horizontal' : 'ph ph-sliders-horizontal'"></i> Painel de Controle</button>
-        </nav>
-
-        <div class="px-6 mb-4">
-            <button @click="toggleTheme" class="w-full flex items-center justify-between p-3 rounded-xl bg-slate-800/40 border border-slate-700/50 hover:bg-slate-800 transition-colors group">
-                <span class="text-sm font-medium text-slate-300 group-hover:text-white">Modo Escuro</span>
-                <i class="ph-fill text-xl transition-all" :class="isDarkMode ? 'ph-moon-stars text-indigo-400' : 'ph-sun text-yellow-500'"></i>
-            </button>
-        </div>
-
-        <div class="p-6 m-4 mt-0 bg-slate-800/40 rounded-2xl border border-slate-700/50 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-indigo-900/50 flex items-center justify-center border border-indigo-500/30 text-indigo-300"><i class="ph-fill ph-user text-xl"></i></div>
-            <div class="overflow-hidden">
-                <p class="font-bold text-white text-sm truncate">Supervisor de Controle</p>
-                <p class="text-xs text-indigo-400 truncate">Acesso Administrativo</p>
-            </div>
-        </div>
-    </aside>
-
-    <main class="flex-1 p-4 md:p-10 overflow-y-auto w-full h-screen relative">
-        <div v-if="carregando" class="absolute inset-0 bg-[#f8fafc]/80 dark:bg-[#0f172a]/80 backdrop-blur-sm z-30 flex items-center justify-center transition-all">
-            <div class="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 border border-slate-100 dark:border-slate-700">
-                <div class="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
-                <span class="font-bold text-slate-700 dark:text-slate-200">Sincronizando operação...</span>
-            </div>
-        </div>
-
-        <transition name="fade" mode="out-in">
-            <div v-if="currentTab === 'dashboard'" key="dashboard" class="max-w-7xl mx-auto">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                    <div>
-                        <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Visão Analítica</h2>
-                        <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Acompanhamento de metas operacionais e perdas de etiquetas.</p>
-                    </div>
-                    <div class="bg-white dark:bg-slate-800 p-1 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 inline-flex">
-                        <button @click="visaoMetas = 'mensal'" :class="visaoMetas === 'mensal' ? 'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'" class="px-5 py-2.5 rounded-lg text-sm transition-all">Mês Vigente</button>
-                        <button @click="visaoMetas = 'anual'" :class="visaoMetas === 'anual' ? 'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'" class="px-5 py-2.5 rounded-lg text-sm transition-all">Acumulado Anual</button>
-                    </div>
+        <div class="bg-white dark:bg-slate-800 p-10 rounded-[2rem] shadow-2xl w-full max-w-md border border-slate-100 dark:border-slate-700 relative z-10">
+            <div class="flex flex-col items-center justify-center gap-4 mb-10">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i class="ph-bold ph-chart-line-up text-white text-3xl"></i>
                 </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden transition-colors"
-                         :class="totalProducao > limiteProducao ? 'border-red-300 dark:border-red-900 shadow-red-100/50' : ''">
-                        <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] -z-0 transition-colors"
-                             :class="totalProducao > limiteProducao ? 'bg-red-50 dark:bg-red-900/10' : 'bg-emerald-50 dark:bg-emerald-900/10'"></div>
-                        <div class="relative z-10">
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
-                                         :class="totalProducao > limiteProducao ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'">
-                                        <i class="ph-fill ph-factory text-xl"></i>
-                                    </div>
-                                    <h3 class="font-bold text-sm uppercase tracking-wider transition-colors"
-                                        :class="totalProducao > limiteProducao ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">Desvios Produção</h3>
-                                </div>
-                                <span v-if="totalProducao > limiteProducao" class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold px-3 py-1 rounded-full animate-pulse">ESTOUROU</span>
-                            </div>
-                            
-                            <div class="flex items-end gap-3 mb-6">
-                                <span class="text-5xl font-black transition-colors"
-                                      :class="totalProducao > limiteProducao ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">{{ totalProducao }}</span>
-                                <span class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-1 border-l-2 border-slate-200 dark:border-slate-700 pl-3">Meta: <span class="text-slate-700 dark:text-slate-200 font-bold">{{ limiteProducao }}</span></span>
-                            </div>
-                            
-                            <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden shadow-inner">
-                                <div class="h-full rounded-full transition-all duration-1000 ease-out" 
-                                     :class="totalProducao > limiteProducao ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-emerald-400 to-emerald-600'"
-                                     :style="{ width: Math.min(percentualProducao, 100) + '%' }"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden transition-colors"
-                         :class="totalEstoque > limiteEstoque ? 'border-red-300 dark:border-red-900 shadow-red-100/50' : ''">
-                        <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] -z-0 transition-colors"
-                             :class="totalEstoque > limiteEstoque ? 'bg-red-50 dark:bg-red-900/10' : 'bg-emerald-50 dark:bg-emerald-900/10'"></div>
-                        <div class="relative z-10">
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
-                                         :class="totalEstoque > limiteEstoque ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'">
-                                        <i class="ph-fill ph-package text-xl"></i>
-                                    </div>
-                                    <h3 class="font-bold text-sm uppercase tracking-wider transition-colors"
-                                        :class="totalEstoque > limiteEstoque ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">Desvios Estoque</h3>
-                                </div>
-                                <span v-if="totalEstoque > limiteEstoque" class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold px-3 py-1 rounded-full animate-pulse">ESTOUROU</span>
-                            </div>
-                            
-                            <div class="flex items-end gap-3 mb-6">
-                                <span class="text-5xl font-black transition-colors"
-                                      :class="totalEstoque > limiteEstoque ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">{{ totalEstoque }}</span>
-                                <span class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-1 border-l-2 border-slate-200 dark:border-slate-700 pl-3">Meta: <span class="text-slate-700 dark:text-slate-200 font-bold">{{ limiteEstoque }}</span></span>
-                            </div>
-                            
-                            <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden shadow-inner">
-                                <div class="h-full rounded-full transition-all duration-1000 ease-out" 
-                                     :class="totalEstoque > limiteEstoque ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-emerald-400 to-emerald-600'"
-                                     :style="{ width: Math.min(percentualEstoque, 100) + '%' }"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-slate-700 mb-8 w-full transition-colors">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 text-lg">
-                            <i class="ph-fill ph-chart-bar text-2xl text-indigo-500"></i> Evolução Mensal <span class="text-xs text-slate-400 font-normal ml-2">(Vermelho = Acima da Meta / Verde = Dentro da Meta)</span>
-                        </h3>
-                    </div>
-                    <div class="relative h-72 md:h-80 w-full">
-                        <canvas id="evolucaoChart"></canvas>
-                    </div>
+                <div class="text-center">
+                    <h1 class="text-3xl font-extrabold tracking-tight text-slate-800 dark:text-white">Quali<span class="text-indigo-500">Track</span></h1>
+                    <p class="text-sm text-slate-500 font-medium mt-1">Acesso Operacional</p>
                 </div>
             </div>
-
-            <div v-else-if="currentTab === 'consequencias'" key="consequencias" class="max-w-7xl mx-auto">
-                <div class="mb-8">
-                    <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Gestão de Consequências</h2>
-                    <p class="text-slate-500 dark:text-slate-400 mt-1">Clique no card do colaborador para abrir a Ficha Analítica.</p>
-                </div>
-            
-                <div v-if="regraAtiva && destaquesEquipe.length > 0" class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-6 md:p-8 shadow-sm mb-8 w-full text-white transition-all">
-                    <h3 class="font-bold flex items-center gap-2 text-lg mb-6">
-                        <i class="ph-fill ph-medal text-2xl text-yellow-300"></i> Destaques da Operação <span class="text-xs text-emerald-100 font-medium ml-2 border-l pl-2 border-emerald-400 hidden sm:inline-block">Zero Ocorrências (Últimos 60 dias)</span>
-                    </h3>
-                    <div class="flex flex-wrap gap-3">
-                        <button v-for="destaque in destaquesEquipe" :key="destaque" @click="abrirRaioX(destaque)" class="bg-white/20 hover:bg-white/30 transition-colors backdrop-blur-sm border border-white/30 px-4 py-2 rounded-xl font-bold flex items-center gap-2 shadow-sm hover:-translate-y-1">
-                            <i class="ph-fill ph-star text-yellow-300"></i> {{ destaque }}
-                        </button>
-                    </div>
-                </div>
-            
-                <div v-if="regraAtiva" class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-slate-700 mb-8 w-full transition-colors">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        <button v-for="inspetor in statusEquipe" :key="inspetor.nome" @click="abrirRaioX(inspetor.nome)" class="p-5 rounded-2xl border flex flex-col gap-3 transition-all hover:shadow-md hover:-translate-y-1 text-left w-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/50" :class="inspetor.cor">
-                            <div class="flex justify-between items-start w-full">
-                                <span class="font-bold tracking-tight leading-tight">{{ inspetor.nome }}</span>
-                                <span class="text-2xl font-black bg-white/50 dark:bg-black/20 px-3 py-1 rounded-lg">{{ inspetor.total }}</span>
-                            </div>
-                            <div class="text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 mt-2">
-                                <i class="ph-fill ph-siren text-lg" v-if="inspetor.total >= 2"></i>
-                                <i class="ph-fill ph-check-circle text-lg" v-else></i>
-                                {{ inspetor.status }}
-                            </div>
-                        </button>
-                    </div>
-                </div>
-                <div v-else class="bg-slate-100 dark:bg-slate-800/50 rounded-3xl p-8 text-center border border-slate-200 dark:border-slate-700 border-dashed">
-                    <i class="ph-fill ph-warning-octagon text-4xl text-slate-400 mb-3"></i>
-                    <h3 class="font-bold text-slate-600 dark:text-slate-300">Gestão Desativada</h3>
-                    <p class="text-sm text-slate-500 mt-1">Habilite este recurso no Painel de Controle.</p>
-                </div>
-            </div>
-
-            <div v-else-if="currentTab === 'lancamento'" key="lancamento" class="max-w-4xl mx-auto">
-                <div class="mb-8">
-                    <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Novo Apontamento</h2>
-                    <p class="text-slate-500 dark:text-slate-400 mt-1">Registre as ocorrências da operação.</p>
-                </div>
-                
-                <form @submit.prevent="salvarRegistro" class="bg-white dark:bg-slate-800 rounded-3xl p-8 md:p-10 shadow-sm border border-slate-100 dark:border-slate-700 transition-colors">
-                    
-                    <div class="mb-8">
-                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 uppercase tracking-wide">Setor da Ocorrência</label>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <label class="relative cursor-pointer group">
-                                <input type="radio" v-model="form.local" value="Produção" class="peer sr-only" required>
-                                <div class="p-6 rounded-2xl border-2 border-slate-200 dark:border-slate-600 peer-checked:border-rose-500 dark:peer-checked:border-rose-500 peer-checked:bg-rose-50 dark:peer-checked:bg-rose-900/20 transition-all flex flex-col items-center justify-center gap-3">
-                                    <div class="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-700 peer-checked:bg-rose-200 dark:peer-checked:bg-rose-900/40 flex items-center justify-center transition-colors"><i class="ph-fill ph-factory text-3xl text-slate-400 dark:text-slate-500 peer-checked:text-rose-600 dark:peer-checked:text-rose-400"></i></div>
-                                    <span class="font-bold text-slate-600 dark:text-slate-300 peer-checked:text-rose-700 dark:peer-checked:text-rose-400 text-lg">Linha de Produção</span>
-                                </div>
-                            </label>
-                            <label class="relative cursor-pointer group">
-                                <input type="radio" v-model="form.local" value="Estoque" class="peer sr-only">
-                                <div class="p-6 rounded-2xl border-2 border-slate-200 dark:border-slate-600 peer-checked:border-cyan-500 dark:peer-checked:border-cyan-500 peer-checked:bg-cyan-50 dark:peer-checked:bg-cyan-900/20 transition-all flex flex-col items-center justify-center gap-3">
-                                    <div class="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-700 peer-checked:bg-cyan-200 dark:peer-checked:bg-cyan-900/40 flex items-center justify-center transition-colors"><i class="ph-fill ph-package text-3xl text-slate-400 dark:text-slate-500 peer-checked:text-cyan-600 dark:peer-checked:text-cyan-400"></i></div>
-                                    <span class="font-bold text-slate-600 dark:text-slate-300 peer-checked:text-cyan-700 dark:peer-checked:text-cyan-400 text-lg">Área de Estoque</span>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8">
-                        <div class="md:col-span-4">
-                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Data e Hora</label>
-                            <div class="relative">
-                                <input type="datetime-local" v-model="form.dataOcorrencia" class="input-modern" required>
-                            </div>
-                        </div>
-
-                        <div class="md:col-span-4">
-                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Colaborador</label>
-                            <div class="relative">
-                                <select v-model="form.responsavel" class="input-modern" required>
-                                    <option value="" disabled selected>Identificar equipe...</option>
-                                    <option v-for="resp in listaResponsaveis" :key="resp" :value="resp">{{ resp }}</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="md:col-span-3">
-                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Motivo</label>
-                            <div class="relative">
-                                <select v-model="form.causa" class="input-modern" required>
-                                    <option value="" disabled selected>Diagnóstico...</option>
-                                    <option v-for="causa in listaCausas" :key="causa" :value="causa">{{ causa }}</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="md:col-span-1">
-                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Qtd.</label>
-                            <div class="relative">
-                                <input type="number" min="1" v-model="form.quantidade" class="input-modern px-2 font-bold text-center text-rose-600 dark:text-rose-400" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mb-2 mt-4">
-                        <label class="flex items-center gap-3 cursor-pointer group w-fit">
-                            <div class="relative flex items-center">
-                                <input type="checkbox" v-model="form.contabilizar" class="peer sr-only">
-                                <div class="w-6 h-6 border-2 border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 peer-checked:bg-indigo-500 peer-checked:border-indigo-500 transition-all flex items-center justify-center">
-                                    <i class="ph-bold ph-check text-white opacity-0 peer-checked:opacity-100 transition-opacity"></i>
-                                </div>
-                            </div>
-                            <span class="text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors">
-                                Contabilizar na Gestão de Consequências
-                            </span>
-                        </label>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 ml-9">Desmarque se esta ocorrência não deve gerar advertência ao colaborador.</p>
-                    </div>
-
-                    <div class="border-t border-slate-100 dark:border-slate-700 pt-8 mt-4 transition-colors">
-                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg hover:-translate-y-1 flex justify-center items-center gap-3 text-lg">
-                            <i class="ph-bold ph-check text-xl"></i> Gravar Apontamento
-                        </button>
-                    </div>
-                    
-                    <p v-if="mensagemSucesso" class="text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 p-4 rounded-xl text-center mt-6 font-bold flex justify-center items-center gap-2 transition-colors">
-                        <i class="ph-fill ph-check-circle text-xl"></i> Lançamento salvo no Data Center!
-                    </p>
-                </form>
-            </div>
-
-            <div v-else-if="currentTab === 'historico'" key="historico" class="max-w-7xl mx-auto">
-                <div class="mb-8">
-                    <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Base de Conhecimento</h2>
-                </div>
-                <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden transition-colors">
-                    <div class="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 p-2 gap-2 transition-colors">
-                        <button @click="abaHistorico = 'Produção'" :class="abaHistorico === 'Produção' ? 'bg-white dark:bg-slate-800 shadow-sm border-slate-200 dark:border-slate-600 text-rose-600 dark:text-rose-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'" class="flex-1 py-3 rounded-xl border font-bold transition-all">Produção</button>
-                        <button @click="abaHistorico = 'Estoque'" :class="abaHistorico === 'Estoque' ? 'bg-white dark:bg-slate-800 shadow-sm border-slate-200 dark:border-slate-600 text-cyan-600 dark:text-cyan-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'" class="flex-1 py-3 rounded-xl border font-bold transition-all">Estoque</button>
-                    </div>
-                    <div class="p-6 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 flex flex-col md:flex-row gap-4 items-end transition-colors">
-                        <div class="w-full md:w-5/12"><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Causa</label><select v-model="filtros.causa" class="input-modern py-2.5"><option value="">Todas</option><option v-for="c in listaCausas" :value="c">{{ c }}</option></select></div>
-                        <div class="w-full md:w-5/12"><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Colaborador</label><select v-model="filtros.responsavel" class="input-modern py-2.5"><option value="">Todos</option><option v-for="r in listaResponsaveis" :value="r">{{ r }}</option></select></div>
-                        <div class="w-full md:w-2/12 flex justify-end"><button @click="limparFiltros" v-if="filtros.causa || filtros.responsavel" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold py-2.5 rounded-xl border border-slate-200 dark:border-slate-600">Limpar</button></div>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse min-w-[700px]">
-                            <thead>
-                                <tr class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase transition-colors">
-                                    <th class="px-6 py-5">Data e Hora</th>
-                                    <th class="px-6 py-5">Motivo da Falha</th>
-                                    <th class="px-6 py-5">Colaborador</th>
-                                    <th class="px-6 py-5 text-center">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody class="text-sm divide-y divide-slate-100 dark:divide-slate-700">
-                                <tr v-for="reg in historicoFiltrado" :key="reg.id" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                                    <td class="px-6 py-4 font-bold text-slate-700 dark:text-slate-200">{{ reg.dataHoraFormatada.split(' ')[0] }} <span class="text-xs text-slate-400 dark:text-slate-500 font-medium ml-1">{{ reg.dataHoraFormatada.split(' ')[1] }}</span></td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-2">
-                                            <span class="w-2 h-2 rounded-full" :class="abaHistorico === 'Produção' ? 'bg-rose-500' : 'bg-cyan-500'"></span>
-                                            <span class="text-slate-800 dark:text-slate-200 font-semibold">{{ reg.causa }}</span>
-                                            <span v-if="reg.quantidade > 1" class="text-[10px] bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800 px-2 py-1 rounded-md font-bold">{{ reg.quantidade }} UND</span>
-                                            <span v-if="reg.contabilizar === false" class="text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-500 px-2 py-1 rounded-md font-bold" title="Não contabilizado na gestão">IGN</span>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 font-medium text-slate-600 dark:text-slate-300">{{ reg.responsavel }}</td>
-                                    <td class="px-6 py-4 text-center flex justify-center gap-2">
-                                        <button @click="abrirEdicao(reg)" class="text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 p-2 rounded-lg transition-all" title="Editar">
-                                            <i class="ph-fill ph-pencil-simple text-xl"></i>
-                                        </button>
-                                        <button @click="deletarRegistro(reg.id)" class="text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 p-2 rounded-lg transition-all" title="Excluir">
-                                            <i class="ph-fill ph-trash text-xl"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div v-else-if="currentTab === 'configuracoes'" key="configuracoes" class="max-w-6xl mx-auto pb-10">
-                <div class="mb-8">
-                    <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Painel de Controle</h2>
-                </div>
-                
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 lg:col-span-3 transition-colors flex justify-between items-center">
-                        <div>
-                            <h3 class="font-bold text-slate-800 dark:text-white text-lg flex items-center gap-2"><i class="ph-fill ph-gavel text-indigo-500"></i> Gestão de Consequências</h3>
-                            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Habilita ou desabilita a seção de Gestão de Consequências.</p>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" v-model="regraAtiva" @change="salvarRegra" class="sr-only peer">
-                            <div class="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
-                        </label>
-                    </div>
-
-                    <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 lg:col-span-3 transition-colors">
-                        <div class="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
-                            <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400"><i class="ph-fill ph-target text-2xl"></i></div>
-                            <h3 class="font-bold text-slate-800 dark:text-white text-lg">Parâmetros de Tolerância Máxima</h3>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div class="bg-slate-50/50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-700">
-                                <h4 class="font-bold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 text-rose-600 dark:text-rose-400"><i class="ph-fill ph-factory"></i> Limites de Produção</h4>
-                                <div class="space-y-4">
-                                    <div class="flex items-center justify-between"><label class="text-sm font-semibold text-slate-600 dark:text-slate-400">Mensal</label><input type="number" v-model="metas.producaoMensal" @change="salvarConfiguracoes" class="input-modern w-32 text-right font-bold"></div>
-                                    <div class="flex items-center justify-between"><label class="text-sm font-semibold text-slate-600 dark:text-slate-400">Anual</label><input type="number" v-model="metas.producaoAnual" @change="salvarConfiguracoes" class="input-modern w-32 text-right font-bold"></div>
-                                </div>
-                            </div>
-                            <div class="bg-slate-50/50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-700">
-                                <h4 class="font-bold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 text-cyan-600 dark:text-cyan-400"><i class="ph-fill ph-package"></i> Limites de Estoque</h4>
-                                <div class="space-y-4">
-                                    <div class="flex items-center justify-between"><label class="text-sm font-semibold text-slate-600 dark:text-slate-400">Mensal</label><input type="number" v-model="metas.estoqueMensal" @change="salvarConfiguracoes" class="input-modern w-32 text-right font-bold"></div>
-                                    <div class="flex items-center justify-between"><label class="text-sm font-semibold text-slate-600 dark:text-slate-400">Anual</label><input type="number" v-model="metas.estoqueAnual" @change="salvarConfiguracoes" class="input-modern w-32 text-right font-bold"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col lg:col-span-1 transition-colors">
-                        <div class="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
-                            <div class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center text-orange-500 dark:text-orange-400"><i class="ph-fill ph-warning-octagon text-2xl"></i></div>
-                            <h3 class="font-bold text-slate-800 dark:text-white text-lg">Causas</h3>
-                        </div>
-                        <form @submit.prevent="adicionarCausa" class="flex gap-2 mb-6"><input type="text" v-model="novaCausa" placeholder="Nova falha..." class="input-modern" required><button type="submit" class="bg-slate-800 dark:bg-indigo-600 hover:bg-slate-900 dark:hover:bg-indigo-500 text-white px-4 rounded-xl font-bold"><i class="ph-bold ph-plus"></i></button></form>
-                        <div class="flex-1 overflow-y-auto max-h-[300px] pr-2 space-y-3">
-                            <div v-for="(causa, index) in listaCausas" :key="index" class="flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300"><span class="truncate pr-2">{{ causa }}</span><button @click="removerCausa(index)" class="text-slate-300 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400"><i class="ph-fill ph-trash text-lg"></i></button></div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col lg:col-span-2 transition-colors">
-                        <div class="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
-                            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400"><i class="ph-fill ph-users-three text-2xl"></i></div>
-                            <h3 class="font-bold text-slate-800 dark:text-white text-lg">Quadro Operacional</h3>
-                        </div>
-                        <form @submit.prevent="adicionarColaborador" class="flex gap-2 mb-6 max-w-md"><input type="text" v-model="novoColaborador" placeholder="Registrar colaborador..." class="input-modern" required><button type="submit" class="bg-slate-800 dark:bg-indigo-600 hover:bg-slate-900 dark:hover:bg-indigo-500 text-white px-5 rounded-xl font-bold flex items-center gap-2"><i class="ph-bold ph-user-plus"></i> Add</button></form>
-                        <div class="flex-1 overflow-y-auto max-h-[300px] pr-2">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <div v-for="(colab, index) in listaResponsaveis" :key="index" class="flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center font-bold text-xs">{{ colab.charAt(0) }}</div><span class="truncate">{{ colab }}</span></div><button @click="removerColaborador(index)" class="text-slate-300 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400"><i class="ph-fill ph-trash text-lg"></i></button></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </transition>
-        
-        <div v-if="modalEdicao.aberto" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-2xl w-full shadow-2xl border border-slate-200 dark:border-slate-700 relative transition-colors">
-                <button @click="modalEdicao.aberto = false" class="absolute top-6 right-6 text-slate-400 hover:text-rose-500"><i class="ph-bold ph-x text-2xl"></i></button>
-                <h3 class="text-2xl font-bold text-slate-800 dark:text-white mb-6">Editar Apontamento</h3>
-                
-                <form @submit.prevent="salvarEdicao">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Data e Hora</label>
-                            <input type="datetime-local" v-model="modalEdicao.dataOcorrencia" class="input-modern" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Setor</label>
-                            <select v-model="modalEdicao.local" class="input-modern" required>
-                                <option value="Produção">Produção</option>
-                                <option value="Estoque">Estoque</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Qtd.</label>
-                            <input type="number" min="1" v-model="modalEdicao.quantidade" class="input-modern font-bold text-rose-600 dark:text-rose-400" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Colaborador</label>
-                            <select v-model="modalEdicao.responsavel" class="input-modern" required>
-                                <option v-for="resp in listaResponsaveis" :value="resp">{{ resp }}</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Motivo</label>
-                            <select v-model="modalEdicao.causa" class="input-modern" required>
-                                <option v-for="causa in listaCausas" :value="causa">{{ causa }}</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4 mb-2">
-                        <label class="flex items-center gap-3 cursor-pointer group w-fit">
-                            <div class="relative flex items-center">
-                                <input type="checkbox" v-model="modalEdicao.contabilizar" class="peer sr-only">
-                                <div class="w-6 h-6 border-2 border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 peer-checked:bg-indigo-500 peer-checked:border-indigo-500 transition-all flex items-center justify-center">
-                                    <i class="ph-bold ph-check text-white opacity-0 peer-checked:opacity-100 transition-opacity"></i>
-                                </div>
-                            </div>
-                            <span class="text-sm font-bold text-slate-700 dark:text-slate-300">Contabilizar na Gestão de Consequências</span>
-                        </label>
-                    </div>
-
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl mt-4 transition-colors">Atualizar Dados</button>
-                </form>
-            </div>
-        </div>
-
-        <div v-if="modalRaioX.aberto" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-lg w-full shadow-2xl border border-slate-200 dark:border-slate-700 relative transition-colors">
-                <button @click="modalRaioX.aberto = false" class="absolute top-6 right-6 text-slate-400 hover:text-rose-500 transition-colors"><i class="ph-bold ph-x text-2xl"></i></button>
-                
-                <div class="flex items-center gap-4 mb-6">
-                    <div class="w-14 h-14 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-xl font-bold border border-indigo-200 dark:border-indigo-800/50">
-                        {{ modalRaioX.nome.charAt(0) }}
-                    </div>
-                    <div>
-                        <h3 class="text-2xl font-bold text-slate-800 dark:text-white">{{ modalRaioX.nome }}</h3>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Ficha Analítica do Colaborador</p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 transition-colors">
-                        <span class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Histórico</span>
-                        <span class="text-2xl font-black text-slate-700 dark:text-slate-200">{{ modalRaioX.total }}</span>
-                    </div>
-                    <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 transition-colors">
-                        <span class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Ponto de Atenção</span>
-                        <span class="text-sm font-bold text-rose-600 dark:text-rose-400 leading-tight">{{ modalRaioX.causaFrequente }}</span>
-                    </div>
-                </div>
-
+            <form @submit.prevent="fazerLogin" class="space-y-5">
                 <div>
-                    <h4 class="font-bold text-slate-700 dark:text-slate-300 mb-3 text-sm flex items-center gap-2"><i class="ph-bold ph-clock-counter-clockwise"></i> Últimos 5 Apontamentos</h4>
-                    <div v-if="modalRaioX.ultimos.length > 0" class="space-y-2">
-                        <div v-for="reg in modalRaioX.ultimos" class="flex justify-between items-center bg-slate-50 dark:bg-slate-900/30 p-3 rounded-xl border border-slate-100 dark:border-slate-700 text-sm transition-colors">
-                            <span class="font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full" :class="reg.local === 'Produção' ? 'bg-rose-500' : 'bg-cyan-500'"></span>
-                                {{ reg.causa }}
-                                <span v-if="reg.contabilizar === false" class="text-[9px] bg-slate-200 dark:bg-slate-700 text-slate-500 px-1.5 py-0.5 rounded-sm uppercase tracking-wider font-bold">Ignorado</span>
-                            </span>
-                            <span class="text-xs text-slate-400 font-medium whitespace-nowrap">{{ reg.dataHoraFormatada.split(' ')[0] }}</span>
+                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">E-mail corporativo</label>
+                    <input type="email" v-model="loginForm.email" class="input-modern" required placeholder="Digite seu e-mail">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Senha</label>
+                    <input type="password" v-model="loginForm.senha" class="input-modern" required placeholder="••••••••">
+                </div>
+                
+                <div v-if="erroLogin" class="p-3 bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-600 dark:text-rose-400 text-sm font-bold text-center flex items-center justify-center gap-2">
+                    <i class="ph-fill ph-warning-circle text-lg"></i> {{ erroLogin }}
+                </div>
+                
+                <button type="submit" :disabled="carregando" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-indigo-600/20 hover:-translate-y-1 flex justify-center items-center gap-2">
+                    <span v-if="!carregando">Acessar Sistema</span>
+                    <i v-else class="ph-bold ph-spinner animate-spin text-xl"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div v-else class="min-h-screen flex flex-col md:flex-row">
+        <header class="md:hidden bg-[#0B1121] text-white p-4 flex justify-between items-center shadow-lg z-40 sticky top-0">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i class="ph-bold ph-chart-line-up text-white"></i>
+                </div>
+                <h1 class="text-lg font-bold tracking-tight">Quali<span class="text-indigo-400">Track</span></h1>
+            </div>
+            <button @click="menuMobileAberto = !menuMobileAberto" class="text-2xl p-1 text-slate-300 hover:text-white transition-colors focus:outline-none">
+                <i class="ph" :class="menuMobileAberto ? 'ph-x' : 'ph-list'"></i>
+            </button>
+        </header>
+
+        <div v-if="menuMobileAberto" @click="menuMobileAberto = false" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-40 md:hidden transition-opacity"></div>
+
+        <aside :class="menuMobileAberto ? 'translate-x-0' : '-translate-x-full'" class="fixed md:relative inset-y-0 left-0 w-72 bg-[#0B1121] text-slate-300 flex flex-col shadow-2xl z-50 transform md:translate-x-0 transition-transform duration-300 ease-in-out h-full border-r border-slate-800">
+            <div class="p-8 text-center border-b border-slate-800/60">
+                <div class="flex items-center justify-center gap-3 mb-2">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30"><i class="ph-bold ph-chart-line-up text-white text-xl"></i></div>
+                    <h1 class="text-2xl font-extrabold tracking-tight text-white">Quali<span class="text-indigo-400">Track</span></h1>
+                </div>
+            </div>
+            
+            <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+                <button @click="mudarAba('dashboard')" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'dashboard', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'dashboard'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'dashboard' ? 'ph-fill ph-chart-pie-slice' : 'ph ph-chart-pie-slice'"></i> Visão Analítica</button>
+                <button @click="mudarAba('lancamento')" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'lancamento', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'lancamento'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'lancamento' ? 'ph-fill ph-plus-circle' : 'ph ph-plus-circle'"></i> Registrar Apontamento</button>
+                
+                <button v-if="usuarioLogado.nivelAcesso !== 'Técnico'" @click="mudarAba('consequencias')" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'consequencias', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'consequencias'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'consequencias' ? 'ph-fill ph-gavel' : 'ph ph-gavel'"></i> Gestão de Consequências</button>
+                <button v-if="usuarioLogado.nivelAcesso !== 'Técnico'" @click="mudarAba('historico')" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'historico', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'historico'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'historico' ? 'ph-fill ph-clock-counter-clockwise' : 'ph ph-clock-counter-clockwise'"></i> Histórico e Filtros</button>
+                <button v-if="usuarioLogado.nivelAcesso !== 'Técnico'" @click="mudarAba('configuracoes')" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'configuracoes', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'configuracoes'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'configuracoes' ? 'ph-fill ph-sliders-horizontal' : 'ph ph-sliders-horizontal'"></i> Painel de Controle</button>
+
+                <a v-if="usuarioLogado.nivelAcesso === 'Coordenador'" href="admin.html" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-transparent hover:bg-slate-800/50 hover:text-white text-indigo-400 font-medium mt-4 border-t border-slate-800 pt-6">
+                    <i class="text-2xl ph-fill ph-shield-check"></i> Menu Administração
+                </a>
+            </nav>
+
+            <div class="px-6 mb-4" v-if="usuarioLogado.fabricas && usuarioLogado.fabricas.length > 1">
+                <label class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-2 block">Unidade de Lançamento</label>
+                <div class="relative">
+                    <select v-model="usuarioLogado.fabricaAtual" @change="salvarSessao" class="w-full bg-slate-800/50 border border-slate-700/50 text-white font-bold text-sm rounded-xl px-4 py-3 outline-none focus:border-indigo-500 appearance-none">
+                        <option v-for="fab in usuarioLogado.fabricas" :value="fab">{{ fab }}</option>
+                    </select>
+                    <i class="ph-bold ph-caret-down absolute right-4 top-3.5 text-slate-400 pointer-events-none"></i>
+                </div>
+            </div>
+
+            <div class="px-6 mb-4">
+                <button @click="toggleTheme" class="w-full flex items-center justify-between p-3 rounded-xl bg-slate-800/40 border border-slate-700/50 hover:bg-slate-800 transition-colors group">
+                    <span class="text-sm font-medium text-slate-300 group-hover:text-white">Modo Escuro</span>
+                    <i class="ph-fill text-xl transition-all" :class="isDarkMode ? 'ph-moon-stars text-indigo-400' : 'ph-sun text-yellow-500'"></i>
+                </button>
+            </div>
+
+            <div class="p-6 m-4 mt-0 bg-slate-800/40 rounded-2xl border border-slate-700/50 flex items-center justify-between">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <div class="w-10 h-10 rounded-full bg-indigo-900/50 flex items-center justify-center border border-indigo-500/30 text-indigo-300 shrink-0"><i class="ph-fill ph-user text-xl"></i></div>
+                    <div class="overflow-hidden">
+                        <p class="font-bold text-white text-sm truncate">{{ usuarioLogado.nome }}</p>
+                        <p class="text-[10px] text-indigo-400 uppercase tracking-wider font-bold truncate">{{ usuarioLogado.nivelAcesso }} <span v-if="usuarioLogado.fabricas.length === 1">• {{ usuarioLogado.fabricaAtual }}</span></p>
+                    </div>
+                </div>
+                <button @click="fazerLogout" class="text-slate-500 hover:text-rose-500 bg-slate-900 hover:bg-rose-900/30 p-2 rounded-lg transition-all" title="Sair do Sistema">
+                    <i class="ph-bold ph-sign-out text-lg"></i>
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-4 md:p-10 overflow-y-auto w-full h-screen relative">
+            <div v-if="carregando && usuarioLogado" class="absolute inset-0 bg-[#f8fafc]/80 dark:bg-[#0f172a]/80 backdrop-blur-sm z-30 flex items-center justify-center transition-all">
+                <div class="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 border border-slate-100 dark:border-slate-700">
+                    <div class="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <span class="font-bold text-slate-700 dark:text-slate-200">Sincronizando operação...</span>
+                </div>
+            </div>
+
+            <transition name="fade" mode="out-in">
+                <div v-if="currentTab === 'dashboard'" key="dashboard" class="max-w-7xl mx-auto">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                        <div>
+                            <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Visão Analítica</h2>
+                            <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Metas e perdas da <span class="font-bold text-indigo-500">{{ usuarioLogado.fabricaAtual }}</span>.</p>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 p-1 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 inline-flex">
+                            <button @click="visaoMetas = 'mensal'" :class="visaoMetas === 'mensal' ? 'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'" class="px-5 py-2.5 rounded-lg text-sm transition-all">Mês Vigente</button>
+                            <button @click="visaoMetas = 'anual'" :class="visaoMetas === 'anual' ? 'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'" class="px-5 py-2.5 rounded-lg text-sm transition-all">Acumulado Anual</button>
                         </div>
                     </div>
-                    <div v-else class="text-center p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl text-emerald-600 dark:text-emerald-400 font-medium text-sm transition-colors border border-emerald-100 dark:border-emerald-800/50">
-                        Nenhum histórico encontrado. Excelente!
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden transition-colors" :class="totalProducao > limiteProducao ? 'border-red-300 dark:border-red-900 shadow-red-100/50' : ''">
+                            <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] -z-0 transition-colors" :class="totalProducao > limiteProducao ? 'bg-red-50 dark:bg-red-900/10' : 'bg-emerald-50 dark:bg-emerald-900/10'"></div>
+                            <div class="relative z-10">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" :class="totalProducao > limiteProducao ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'">
+                                            <i class="ph-fill ph-factory text-xl"></i>
+                                        </div>
+                                        <h3 class="font-bold text-sm uppercase tracking-wider transition-colors" :class="totalProducao > limiteProducao ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">Desvios Produção</h3>
+                                    </div>
+                                </div>
+                                <div class="flex items-end gap-3 mb-6">
+                                    <span class="text-5xl font-black transition-colors" :class="totalProducao > limiteProducao ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">{{ totalProducao }}</span>
+                                    <span class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-1 border-l-2 border-slate-200 dark:border-slate-700 pl-3">Meta: <span class="text-slate-700 dark:text-slate-200 font-bold">{{ limiteProducao }}</span></span>
+                                </div>
+                                <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden shadow-inner">
+                                    <div class="h-full rounded-full transition-all duration-1000 ease-out" :class="totalProducao > limiteProducao ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-emerald-400 to-emerald-600'" :style="{ width: Math.min(percentualProducao, 100) + '%' }"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden transition-colors" :class="totalEstoque > limiteEstoque ? 'border-red-300 dark:border-red-900 shadow-red-100/50' : ''">
+                            <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] -z-0 transition-colors" :class="totalEstoque > limiteEstoque ? 'bg-red-50 dark:bg-red-900/10' : 'bg-emerald-50 dark:bg-emerald-900/10'"></div>
+                            <div class="relative z-10">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" :class="totalEstoque > limiteEstoque ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'">
+                                            <i class="ph-fill ph-package text-xl"></i>
+                                        </div>
+                                        <h3 class="font-bold text-sm uppercase tracking-wider transition-colors" :class="totalEstoque > limiteEstoque ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">Desvios Estoque</h3>
+                                    </div>
+                                </div>
+                                <div class="flex items-end gap-3 mb-6">
+                                    <span class="text-5xl font-black transition-colors" :class="totalEstoque > limiteEstoque ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">{{ totalEstoque }}</span>
+                                    <span class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-1 border-l-2 border-slate-200 dark:border-slate-700 pl-3">Meta: <span class="text-slate-700 dark:text-slate-200 font-bold">{{ limiteEstoque }}</span></span>
+                                </div>
+                                <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden shadow-inner">
+                                    <div class="h-full rounded-full transition-all duration-1000 ease-out" :class="totalEstoque > limiteEstoque ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-emerald-400 to-emerald-600'" :style="{ width: Math.min(percentualEstoque, 100) + '%' }"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-slate-700 w-full transition-colors">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 text-lg"><i class="ph-fill ph-chart-bar text-2xl text-indigo-500"></i> Evolução Mensal</h3>
+                        </div>
+                        <div class="relative h-72 md:h-80 w-full"><canvas id="evolucaoChart"></canvas></div>
+                    </div>
+                </div>
+
+                <div v-else-if="currentTab === 'consequencias'" key="consequencias" class="max-w-7xl mx-auto">
+                    <div class="mb-8">
+                        <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Gestão de Consequências</h2>
+                        <p class="text-slate-500 dark:text-slate-400 mt-1">Acompanhamento da <span class="font-bold">{{ usuarioLogado.fabricaAtual }}</span>.</p>
+                    </div>
+                    <div v-if="regraAtiva && destaquesEquipe.length > 0" class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-6 shadow-sm mb-8 w-full text-white">
+                        <h3 class="font-bold flex items-center gap-2 text-lg mb-6"><i class="ph-fill ph-medal text-2xl text-yellow-300"></i> Destaques da Operação <span class="text-xs text-emerald-100 font-medium ml-2 border-l pl-2 border-emerald-400 hidden sm:inline-block">Zero Ocorrências (Últimos 60 dias)</span></h3>
+                        <div class="flex flex-wrap gap-3">
+                            <button v-for="destaque in destaquesEquipe" :key="destaque" @click="abrirRaioX(destaque)" class="bg-white/20 hover:bg-white/30 transition-colors backdrop-blur-sm border border-white/30 px-4 py-2 rounded-xl font-bold flex items-center gap-2 shadow-sm hover:-translate-y-1"><i class="ph-fill ph-star text-yellow-300"></i> {{ destaque }}</button>
+                        </div>
+                    </div>
+                    <div v-if="regraAtiva" class="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 mb-8 w-full">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            <button v-for="inspetor in statusEquipe" :key="inspetor.nome" @click="abrirRaioX(inspetor.nome)" class="p-5 rounded-2xl border flex flex-col gap-3 transition-all hover:shadow-md hover:-translate-y-1 text-left w-full cursor-pointer focus:outline-none" :class="inspetor.cor">
+                                <div class="flex justify-between items-start w-full">
+                                    <span class="font-bold tracking-tight leading-tight">{{ inspetor.nome }}</span>
+                                    <span class="text-2xl font-black bg-white/50 dark:bg-black/20 px-3 py-1 rounded-lg">{{ inspetor.total }}</span>
+                                </div>
+                                <div class="text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 mt-2">
+                                    <i class="ph-fill ph-siren text-lg" v-if="inspetor.total >= 2"></i>
+                                    <i class="ph-fill ph-check-circle text-lg" v-else></i>
+                                    {{ inspetor.status }}
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-else-if="currentTab === 'lancamento'" key="lancamento" class="max-w-4xl mx-auto">
+                    <div class="mb-8">
+                        <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Novo Apontamento</h2>
+                        <p class="text-slate-500 dark:text-slate-400 mt-1">Registrando em <span class="font-bold text-indigo-500">{{ usuarioLogado.fabricaAtual }}</span>.</p>
+                    </div>
+                    <form @submit.prevent="salvarRegistro" class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700">
+                        <div class="mb-8">
+                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 uppercase tracking-wide">Setor</label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <label class="relative cursor-pointer group">
+                                    <input type="radio" v-model="form.local" value="Produção" class="peer sr-only" required>
+                                    <div class="p-6 rounded-2xl border-2 border-slate-200 dark:border-slate-600 peer-checked:border-rose-500 dark:peer-checked:border-rose-500 peer-checked:bg-rose-50 dark:peer-checked:bg-rose-900/20 transition-all flex flex-col items-center justify-center gap-3"><i class="ph-fill ph-factory text-3xl text-slate-400 peer-checked:text-rose-600"></i><span class="font-bold text-slate-600 peer-checked:text-rose-700">Linha de Produção</span></div>
+                                </label>
+                                <label class="relative cursor-pointer group">
+                                    <input type="radio" v-model="form.local" value="Estoque" class="peer sr-only">
+                                    <div class="p-6 rounded-2xl border-2 border-slate-200 dark:border-slate-600 peer-checked:border-cyan-500 dark:peer-checked:border-cyan-500 peer-checked:bg-cyan-50 dark:peer-checked:bg-cyan-900/20 transition-all flex flex-col items-center justify-center gap-3"><i class="ph-fill ph-package text-3xl text-slate-400 peer-checked:text-cyan-600"></i><span class="font-bold text-slate-600 peer-checked:text-cyan-700">Área de Estoque</span></div>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8">
+                            <div class="md:col-span-4"><label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Data e Hora</label><input type="datetime-local" v-model="form.dataOcorrencia" class="input-modern" required></div>
+                            <div class="md:col-span-4"><label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Colaborador</label><select v-model="form.responsavel" class="input-modern" required><option value="" disabled selected>Selecionar...</option><option v-for="resp in listaResponsaveis" :value="resp">{{ resp }}</option></select></div>
+                            <div class="md:col-span-3"><label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Motivo</label><select v-model="form.causa" class="input-modern" required><option value="" disabled selected>Diagnóstico...</option><option v-for="causa in listaCausas" :value="causa">{{ causa }}</option></select></div>
+                            <div class="md:col-span-1"><label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Qtd.</label><input type="number" min="1" v-model="form.quantidade" class="input-modern px-2 font-bold text-center text-rose-600" required></div>
+                        </div>
+                        <div class="mb-2 mt-4" v-if="usuarioLogado.nivelAcesso !== 'Técnico'">
+                            <label class="flex items-center gap-3 cursor-pointer group w-fit">
+                                <input type="checkbox" v-model="form.contabilizar" class="peer sr-only">
+                                <div class="w-6 h-6 border-2 rounded peer-checked:bg-indigo-500 flex items-center justify-center"><i class="ph-bold ph-check text-white opacity-0 peer-checked:opacity-100"></i></div>
+                                <span class="text-sm font-bold text-slate-700 dark:text-slate-300">Contabilizar Advertência</span>
+                            </label>
+                        </div>
+                        <div class="border-t border-slate-100 dark:border-slate-700 pt-8 mt-4"><button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg flex justify-center items-center gap-3 text-lg"><i class="ph-bold ph-check text-xl"></i> Gravar Apontamento</button></div>
+                        <p v-if="mensagemSucesso" class="text-emerald-700 bg-emerald-50 border border-emerald-100 p-4 rounded-xl text-center mt-6 font-bold flex justify-center items-center gap-2"><i class="ph-fill ph-check-circle text-xl"></i> Salvo na {{ usuarioLogado.fabricaAtual }}!</p>
+                    </form>
+                </div>
+
+                <div v-else-if="currentTab === 'historico'" key="historico" class="max-w-7xl mx-auto">
+                    <div class="mb-8"><h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Base de Conhecimento</h2></div>
+                    <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+                        <div class="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 p-2 gap-2">
+                            <button @click="abaHistorico = 'Produção'" :class="abaHistorico === 'Produção' ? 'bg-white shadow-sm text-rose-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600' : 'text-slate-500 border-transparent'" class="flex-1 py-3 rounded-xl border font-bold">Produção</button>
+                            <button @click="abaHistorico = 'Estoque'" :class="abaHistorico === 'Estoque' ? 'bg-white shadow-sm text-cyan-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600' : 'text-slate-500 border-transparent'" class="flex-1 py-3 rounded-xl border font-bold">Estoque</button>
+                        </div>
+                        <div class="overflow-x-auto p-4">
+                            <table class="w-full text-left border-collapse min-w-[700px]">
+                                <thead>
+                                    <tr class="text-slate-500 text-xs font-bold uppercase"><th class="px-6 py-5">Data e Hora</th><th class="px-6 py-5">Motivo</th><th class="px-6 py-5">Colaborador</th><th class="px-6 py-5 text-center">Ações</th></tr>
+                                </thead>
+                                <tbody class="text-sm divide-y divide-slate-100 dark:divide-slate-700">
+                                    <tr v-for="reg in historicoFiltrado" :key="reg.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                        <td class="px-6 py-4 font-bold text-slate-700 dark:text-slate-200">{{ reg.dataHoraFormatada.split(' ')[0] }} <span class="text-xs text-slate-400 font-medium ml-1">{{ reg.dataHoraFormatada.split(' ')[1] }}</span></td>
+                                        <td class="px-6 py-4"><span class="w-2 h-2 inline-block rounded-full mr-2" :class="abaHistorico === 'Produção' ? 'bg-rose-500' : 'bg-cyan-500'"></span><span class="font-semibold">{{ reg.causa }}</span></td>
+                                        <td class="px-6 py-4 font-medium">{{ reg.responsavel }}</td>
+                                        <td class="px-6 py-4 text-center">
+                                            <button @click="abrirEdicao(reg)" class="text-slate-400 hover:text-indigo-500 p-2 rounded-lg" title="Editar"><i class="ph-fill ph-pencil-simple text-xl"></i></button>
+                                            <button @click="deletarRegistro(reg.id)" class="text-slate-400 hover:text-rose-500 p-2 rounded-lg" title="Excluir"><i class="ph-fill ph-trash text-xl"></i></button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-else-if="currentTab === 'configuracoes'" key="configuracoes" class="max-w-6xl mx-auto pb-10">
+                    <div class="mb-8"><h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Painel de Controle</h2><p class="text-slate-500 dark:text-slate-400 mt-1">Configurações globais e listas aplicáveis a <span class="font-bold">{{ usuarioLogado.fabricaAtual }}</span>.</p></div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col transition-colors">
+                            <div class="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
+                                <div class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center text-orange-500 dark:text-orange-400"><i class="ph-fill ph-warning-octagon text-2xl"></i></div>
+                                <h3 class="font-bold text-slate-800 dark:text-white text-lg">Cadastro de Causas</h3>
+                            </div>
+                            <form @submit.prevent="adicionarCausa" class="flex gap-2 mb-6"><input type="text" v-model="novaCausa" placeholder="Nova falha..." class="input-modern" required><button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 rounded-xl font-bold"><i class="ph-bold ph-plus"></i></button></form>
+                            <div class="flex-1 overflow-y-auto max-h-[300px] pr-2 space-y-3">
+                                <div v-for="(causa, index) in listaCausas" :key="index" class="flex justify-between items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300"><span class="truncate pr-2">{{ causa }}</span><button @click="removerCausa(index)" class="text-slate-400 hover:text-rose-500"><i class="ph-fill ph-trash text-lg"></i></button></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col transition-colors">
+                            <div class="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400"><i class="ph-fill ph-users-three text-2xl"></i></div>
+                                <h3 class="font-bold text-slate-800 dark:text-white text-lg">Quadro Operacional</h3>
+                            </div>
+                            <form @submit.prevent="adicionarColaborador" class="flex gap-2 mb-6 max-w-md"><input type="text" v-model="novoColaborador" placeholder="Nome do colaborador..." class="input-modern" required><button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 rounded-xl font-bold"><i class="ph-bold ph-user-plus"></i></button></form>
+                            <div class="flex-1 overflow-y-auto max-h-[300px] pr-2 space-y-3">
+                                <div v-for="(colab, index) in listaResponsaveis" :key="index" class="flex justify-between items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300"><span>{{ colab }}</span><button @click="removerColaborador(index)" class="text-slate-400 hover:text-rose-500"><i class="ph-fill ph-trash text-lg"></i></button></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+
+            <div v-if="modalRaioX.aberto" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-700 relative">
+                    <button @click="modalRaioX.aberto = false" class="absolute top-6 right-6 text-slate-400 hover:text-rose-500"><i class="ph-bold ph-x text-2xl"></i></button>
+                    <h3 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 text-center">{{ modalRaioX.nome }}</h3>
+                    <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 text-center mb-6">
+                        <span class="block text-xs font-bold text-slate-500 uppercase">Total Histórico (Fábrica Atual)</span>
+                        <span class="text-4xl font-black text-slate-700 dark:text-slate-200 mt-2 block">{{ modalRaioX.total }}</span>
                     </div>
                 </div>
             </div>
-        </div>
 
-    </main>
+        </main>
+    </div>
+
 </div>
 <script type="module" src="./app.js"></script>
 </body>
