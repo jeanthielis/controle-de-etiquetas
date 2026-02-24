@@ -1,31 +1,34 @@
 import { createApp, ref, reactive, computed, watch, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
 import { db } from './firebase-config.js'; 
-import { collection, addDoc, onSnapshot, query, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, addDoc, onSnapshot, query, updateDoc, deleteDoc, doc, setDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const gerarDataAtualInput = () => {
-    const agora = new Date();
-    const offset = agora.getTimezoneOffset() * 60000;
+    const agora = new Date(); const offset = agora.getTimezoneOffset() * 60000;
     return new Date(agora.getTime() - offset).toISOString().slice(0, 16);
 };
 
 createApp({
     setup() {
+        // SISTEMA DE AUTENTICAÇÃO
+        const usuarioLogado = ref(JSON.parse(localStorage.getItem('qc_user')) || null);
+        const loginForm = reactive({ email: '', senha: '' });
+        const erroLogin = ref('');
+
         const currentTab = ref('dashboard');
         const menuMobileAberto = ref(false);
         const mensagemSucesso = ref(false);
         const visaoMetas = ref('mensal'); 
         const abaHistorico = ref('Produção');
-        const carregando = ref(true);
+        const carregando = ref(false);
         const chartInstance = ref(null);
 
         const isDarkMode = ref(localStorage.getItem('qc_theme') === 'dark');
         const toggleTheme = () => {
             isDarkMode.value = !isDarkMode.value;
             localStorage.setItem('qc_theme', isDarkMode.value ? 'dark' : 'light');
-            aplicarTema();
+            document.documentElement.classList.toggle('dark', isDarkMode.value);
             if (currentTab.value === 'dashboard') setTimeout(() => renderizarGraficoEvolucao(), 50);
         };
-        const aplicarTema = () => document.documentElement.classList.toggle('dark', isDarkMode.value);
 
         const regraAtiva = ref(true);
         const metas = reactive({ producaoMensal: 0, producaoAnual: 0, estoqueMensal: 0, estoqueAnual: 0 });
@@ -34,36 +37,49 @@ createApp({
 
         const filtros = reactive({ causa: '', responsavel: '' });
         const form = reactive({ local: '', causa: '', responsavel: '', quantidade: 1, dataOcorrencia: gerarDataAtualInput(), contabilizar: true });
-        const registros = ref([]);
+        
+        // Agora, 'registrosGerais' guarda tudo, e 'registros' filtra pela fábrica atual
+        const registrosGerais = ref([]);
+        const registros = computed(() => {
+            if (!usuarioLogado.value) return [];
+            return registrosGerais.value.filter(r => r.fabrica === usuarioLogado.value.fabricaAtual);
+        });
 
         const modalEdicao = reactive({ aberto: false, id: null, local: '', causa: '', responsavel: '', quantidade: 1, dataOcorrencia: '', contabilizar: true });
-        
-        // NOVO: Objeto do Dashboard Individual (Raio-X)
         const modalRaioX = reactive({ aberto: false, nome: '', total: 0, causaFrequente: '', ultimos: [] });
 
-        const novaCausa = ref('');
-        const novoColaborador = ref('');
+        const novaCausa = ref(''); const novoColaborador = ref('');
 
-        const salvarConfiguracoes = async () => {
+        // ----------------------------------------------------
+        // FUNÇÕES DE LOGIN E SESSÃO
+        // ----------------------------------------------------
+        const fazerLogin = async () => {
+            erroLogin.value = ''; carregando.value = true;
             try {
-                await setDoc(doc(db, "configuracoes", "geral"), {
-                    regraAtiva: regraAtiva.value,
-                    metas: { ...metas },
-                    causas: listaCausas.value,
-                    responsaveis: listaResponsaveis.value
-                }, { merge: true });
-                if (currentTab.value === 'dashboard') setTimeout(() => renderizarGraficoEvolucao(), 50);
-            } catch (e) { console.error("Erro ao salvar:", e); }
+                const q = query(collection(db, "usuarios"), where("email", "==", loginForm.email), where("senha", "==", loginForm.senha));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    const docUser = querySnapshot.docs[0]; const data = docUser.data();
+                    usuarioLogado.value = { id: docUser.id, nome: data.nome, email: data.email, nivelAcesso: data.nivelAcesso, fabricas: data.fabricas, fabricaAtual: data.fabricas[0] };
+                    salvarSessao();
+                    loginForm.email = ''; loginForm.senha = '';
+                    currentTab.value = 'dashboard';
+                    iniciarMonitoramentoBanco();
+                } else { erroLogin.value = 'Acesso Negado. Verifique os dados.'; }
+            } catch (e) { erroLogin.value = 'Erro de conexão com servidor.'; } 
+            finally { carregando.value = false; }
         };
 
-        const salvarRegra = () => salvarConfiguracoes();
-        const adicionarCausa = () => { if(novaCausa.value.trim()){ listaCausas.value.push(novaCausa.value.trim()); novaCausa.value = ''; salvarConfiguracoes(); } };
-        const removerCausa = (index) => { listaCausas.value.splice(index, 1); salvarConfiguracoes(); };
-        const adicionarColaborador = () => { if(novoColaborador.value.trim()){ listaResponsaveis.value.push(novoColaborador.value.trim()); novoColaborador.value = ''; salvarConfiguracoes(); } };
-        const removerColaborador = (index) => { listaResponsaveis.value.splice(index, 1); salvarConfiguracoes(); };
+        const fazerLogout = () => { usuarioLogado.value = null; localStorage.removeItem('qc_user'); };
+        const salvarSessao = () => { localStorage.setItem('qc_user', JSON.stringify(usuarioLogado.value)); if (currentTab.value === 'dashboard') setTimeout(renderizarGraficoEvolucao, 100); };
 
-        onMounted(() => {
-            aplicarTema();
+        // ----------------------------------------------------
+        // INICIALIZAÇÃO
+        // ----------------------------------------------------
+        const iniciarMonitoramentoBanco = () => {
+            if (!usuarioLogado.value) return;
+            carregando.value = true;
+            
             const docConfig = doc(db, "configuracoes", "geral");
             onSnapshot(docConfig, (snapshot) => {
                 if (snapshot.exists()) {
@@ -72,7 +88,7 @@ createApp({
                     if (data.metas) Object.assign(metas, data.metas);
                     if (data.causas) listaCausas.value = data.causas;
                     if (data.responsaveis) listaResponsaveis.value = data.responsaveis;
-                } else { salvarConfiguracoes(); }
+                }
             });
 
             const q = query(collection(db, "registros"));
@@ -80,135 +96,96 @@ createApp({
                 const dadosMapeados = [];
                 snapshot.forEach((doc) => {
                     const dado = doc.data();
-                    let dataFormatada = 'Sem data';
                     let timestampRaw = dado.timestamp || null;
-                    let tempoMilisegundos = 0; 
-                    
-                    if(timestampRaw) {
-                        const dataObj = timestampRaw.toDate();
-                        tempoMilisegundos = dataObj.getTime();
-                        dataFormatada = `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth()+1).toString().padStart(2, '0')}/${dataObj.getFullYear()} ${dataObj.getHours().toString().padStart(2, '0')}:${dataObj.getMinutes().toString().padStart(2, '0')}`;
-                    }
+                    let tempoMilisegundos = timestampRaw ? timestampRaw.toDate().getTime() : 0;
+                    let dataFormatada = timestampRaw ? `${timestampRaw.toDate().getDate().toString().padStart(2, '0')}/${(timestampRaw.toDate().getMonth()+1).toString().padStart(2, '0')} ${timestampRaw.toDate().getHours().toString().padStart(2, '0')}:${timestampRaw.toDate().getMinutes().toString().padStart(2, '0')}` : '';
 
-                    dadosMapeados.push({
-                        id: doc.id, local: dado.local || 'Indefinido', causa: dado.causa || 'Indefinido', 
-                        responsavel: dado.responsavel || 'Indefinido', quantidade: dado.quantidade || 1, 
-                        dataHoraFormatada: dataFormatada, timestampRaw: timestampRaw, ordenacaoTempo: tempoMilisegundos,
-                        contabilizar: dado.contabilizar !== false
-                    });
+                    dadosMapeados.push({ id: doc.id, local: dado.local, causa: dado.causa, responsavel: dado.responsavel, quantidade: dado.quantidade || 1, dataHoraFormatada: dataFormatada, timestampRaw: timestampRaw, ordenacaoTempo: tempoMilisegundos, contabilizar: dado.contabilizar !== false, fabrica: dado.fabrica || 'Fábrica 1' });
                 });
 
                 dadosMapeados.sort((a, b) => b.ordenacaoTempo - a.ordenacaoTempo);
-                registros.value = dadosMapeados;
+                registrosGerais.value = dadosMapeados;
                 carregando.value = false;
-                if(currentTab.value === 'dashboard') setTimeout(() => renderizarGraficoEvolucao(), 350);
+                if(currentTab.value === 'dashboard') setTimeout(renderizarGraficoEvolucao, 350);
             });
+        };
+
+        onMounted(() => {
+            document.documentElement.classList.toggle('dark', isDarkMode.value);
+            if(usuarioLogado.value) iniciarMonitoramentoBanco();
         });
+
+        // ----------------------------------------------------
+        // FUNÇÕES OPERACIONAIS DA APLICAÇÃO
+        // ----------------------------------------------------
+        const salvarConfiguracoes = async () => { await setDoc(doc(db, "configuracoes", "geral"), { regraAtiva: regraAtiva.value, metas: { ...metas }, causas: listaCausas.value, responsaveis: listaResponsaveis.value }, { merge: true }); };
+        const salvarRegra = () => salvarConfiguracoes();
+        const adicionarCausa = () => { if(novaCausa.value.trim()){ listaCausas.value.push(novaCausa.value.trim()); novaCausa.value = ''; salvarConfiguracoes(); } };
+        const removerCausa = (index) => { listaCausas.value.splice(index, 1); salvarConfiguracoes(); };
+        const adicionarColaborador = () => { if(novoColaborador.value.trim()){ listaResponsaveis.value.push(novoColaborador.value.trim()); novoColaborador.value = ''; salvarConfiguracoes(); } };
+        const removerColaborador = (index) => { listaResponsaveis.value.splice(index, 1); salvarConfiguracoes(); };
 
         const mudarAba = (aba) => { currentTab.value = aba; menuMobileAberto.value = false; };
         const limparFiltros = () => { filtros.causa = ''; filtros.responsavel = ''; };
 
         const salvarRegistro = async () => {
             try {
-                const dataRegistro = new Date(form.dataOcorrencia);
                 await addDoc(collection(db, "registros"), {
                     local: form.local, causa: form.causa, responsavel: form.responsavel, 
-                    quantidade: form.quantidade, timestamp: dataRegistro, contabilizar: form.contabilizar
+                    quantidade: form.quantidade, timestamp: new Date(form.dataOcorrencia), contabilizar: form.contabilizar,
+                    fabrica: usuarioLogado.value.fabricaAtual // Vincula o lançamento à fábrica ativa!
                 });
-                
-                form.local = ''; form.causa = ''; form.responsavel = ''; form.quantidade = 1; 
-                form.dataOcorrencia = gerarDataAtualInput(); form.contabilizar = true; 
-                mensagemSucesso.value = true;
-                setTimeout(() => { mensagemSucesso.value = false; }, 2000);
-            } catch (e) { console.error("Erro ao salvar: ", e); }
+                form.local = ''; form.causa = ''; form.responsavel = ''; form.quantidade = 1; form.dataOcorrencia = gerarDataAtualInput(); form.contabilizar = true; 
+                mensagemSucesso.value = true; setTimeout(() => { mensagemSucesso.value = false; }, 2000);
+            } catch (e) { console.error(e); }
         };
 
         const deletarRegistro = async (id) => { if(confirm("Excluir este registro?")) await deleteDoc(doc(db, "registros", id)); };
 
         const abrirEdicao = (reg) => {
-            modalEdicao.id = reg.id; modalEdicao.local = reg.local; modalEdicao.causa = reg.causa;
-            modalEdicao.responsavel = reg.responsavel; modalEdicao.quantidade = reg.quantidade; modalEdicao.contabilizar = reg.contabilizar;
-            if(reg.timestampRaw) {
-                const d = reg.timestampRaw.toDate();
-                const offset = d.getTimezoneOffset() * 60000;
-                modalEdicao.dataOcorrencia = new Date(d.getTime() - offset).toISOString().slice(0, 16);
-            } else { modalEdicao.dataOcorrencia = gerarDataAtualInput(); }
+            modalEdicao.id = reg.id; modalEdicao.local = reg.local; modalEdicao.causa = reg.causa; modalEdicao.responsavel = reg.responsavel; modalEdicao.quantidade = reg.quantidade; modalEdicao.contabilizar = reg.contabilizar;
             modalEdicao.aberto = true;
         };
-
         const salvarEdicao = async () => {
-            try {
-                await updateDoc(doc(db, "registros", modalEdicao.id), {
-                    local: modalEdicao.local, causa: modalEdicao.causa, responsavel: modalEdicao.responsavel,
-                    quantidade: modalEdicao.quantidade, timestamp: new Date(modalEdicao.dataOcorrencia), contabilizar: modalEdicao.contabilizar 
-                });
-                modalEdicao.aberto = false;
-            } catch (e) { console.error("Erro ao editar: ", e); }
+            await updateDoc(doc(db, "registros", modalEdicao.id), { local: modalEdicao.local, causa: modalEdicao.causa, responsavel: modalEdicao.responsavel, quantidade: modalEdicao.quantidade, contabilizar: modalEdicao.contabilizar });
+            modalEdicao.aberto = false;
         };
 
-        // NOVO: Função que carrega e abre a Ficha Analítica do Colaborador (Raio-X)
         const abrirRaioX = (nomeColaborador) => {
             modalRaioX.nome = nomeColaborador;
             const regsColab = registros.value.filter(r => r.responsavel === nomeColaborador);
-            
             modalRaioX.total = regsColab.reduce((acc, r) => acc + (r.quantidade || 1), 0);
-
-            const contagemCausas = {};
-            regsColab.forEach(r => { contagemCausas[r.causa] = (contagemCausas[r.causa] || 0) + (r.quantidade || 1); });
-            const causaTop = Object.keys(contagemCausas).sort((a, b) => contagemCausas[b] - contagemCausas[a])[0];
-            modalRaioX.causaFrequente = causaTop || 'Nenhum desvio registrado';
-
-            modalRaioX.ultimos = regsColab.slice(0, 5);
             modalRaioX.aberto = true;
         };
 
+        // ----------------------------------------------------
+        // INTELIGÊNCIA E DADOS COMPUTADOS
+        // ----------------------------------------------------
         const statusEquipe = computed(() => {
-            const dataLimite = new Date();
-            dataLimite.setDate(dataLimite.getDate() - 60);
-
+            const dataLimite = new Date(); dataLimite.setDate(dataLimite.getDate() - 60);
             return listaResponsaveis.value.map(resp => {
                 const registrosRecentes = registros.value.filter(r => r.contabilizar !== false && r.timestampRaw && r.responsavel === resp && r.timestampRaw.toDate() >= dataLimite);
                 let total = 0; let erroDeVez = false;
-                registrosRecentes.forEach(r => {
-                    const qtd = r.quantidade || 1;
-                    total += qtd;
-                    if (qtd >= 3) erroDeVez = true; 
-                });
+                registrosRecentes.forEach(r => { total += (r.quantidade || 1); if ((r.quantidade || 1) >= 3) erroDeVez = true; });
 
-                let status = "Sem advertência";
-                let cor = "text-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800";
-
+                let status = "Sem advertência"; let cor = "text-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800";
                 if (erroDeVez || total >= 3) { status = "Advertência Escrita"; cor = "text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-300 dark:border-rose-800"; } 
                 else if (total === 2) { status = "Advertência Verbal"; cor = "text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-800"; }
-                
                 return { nome: resp, total, status, cor };
             }).sort((a, b) => b.total - a.total);
         });
 
-        // NOVO: Inteligência que separa quem tem Zero ocorrências para o mural de Gamificação
         const destaquesEquipe = computed(() => {
-            const dataLimite = new Date();
-            dataLimite.setDate(dataLimite.getDate() - 60);
-
+            const dataLimite = new Date(); dataLimite.setDate(dataLimite.getDate() - 60);
             return listaResponsaveis.value.filter(resp => {
-                const temOcorrencia = registros.value.some(r => r.contabilizar !== false && r.timestampRaw && r.responsavel === resp && r.timestampRaw.toDate() >= dataLimite);
-                return !temOcorrencia;
-            });
-        });
-
-        const registrosFiltradosPorVisao = computed(() => {
-            const dataAtual = new Date(); const mesAtual = dataAtual.getMonth(); const anoAtual = dataAtual.getFullYear();
-            return registros.value.filter(r => {
-                if (!r.timestampRaw) return false;
-                const d = r.timestampRaw.toDate();
-                return visaoMetas.value === 'mensal' ? (d.getMonth() === mesAtual && d.getFullYear() === anoAtual) : (d.getFullYear() === anoAtual);
+                return !registros.value.some(r => r.contabilizar !== false && r.timestampRaw && r.responsavel === resp && r.timestampRaw.toDate() >= dataLimite);
             });
         });
 
         const limiteProducao = computed(() => visaoMetas.value === 'mensal' ? metas.producaoMensal : metas.producaoAnual);
         const limiteEstoque = computed(() => visaoMetas.value === 'mensal' ? metas.estoqueMensal : metas.estoqueAnual);
-        const totalProducao = computed(() => registrosFiltradosPorVisao.value.filter(r => r.local === 'Produção').reduce((acc, r) => acc + (r.quantidade || 1), 0));
-        const totalEstoque = computed(() => registrosFiltradosPorVisao.value.filter(r => r.local === 'Estoque').reduce((acc, r) => acc + (r.quantidade || 1), 0));
+        const totalProducao = computed(() => registros.value.filter(r => r.local === 'Produção').reduce((acc, r) => acc + (r.quantidade || 1), 0));
+        const totalEstoque = computed(() => registros.value.filter(r => r.local === 'Estoque').reduce((acc, r) => acc + (r.quantidade || 1), 0));
         const percentualProducao = computed(() => limiteProducao.value > 0 ? (totalProducao.value / limiteProducao.value) * 100 : 0);
         const percentualEstoque = computed(() => limiteEstoque.value > 0 ? (totalEstoque.value / limiteEstoque.value) * 100 : 0);
         const historicoFiltrado = computed(() => registros.value.filter(reg => reg.local === abaHistorico.value && (filtros.causa === '' || reg.causa === filtros.causa) && (filtros.responsavel === '' || reg.responsavel === filtros.responsavel)));
@@ -221,35 +198,25 @@ createApp({
             [...registros.value].reverse().forEach(reg => {
                 if(!reg.timestampRaw) return;
                 const d = reg.timestampRaw.toDate(); const mesAno = `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
-                const qtd = reg.quantidade || 1;
                 if (!agrupamentoPorMes[mesAno]) agrupamentoPorMes[mesAno] = { producao: 0, estoque: 0 };
-                if (reg.local === 'Produção') agrupamentoPorMes[mesAno].producao += qtd;
-                else if (reg.local === 'Estoque') agrupamentoPorMes[mesAno].estoque += qtd;
+                if (reg.local === 'Produção') agrupamentoPorMes[mesAno].producao += (reg.quantidade || 1);
+                else if (reg.local === 'Estoque') agrupamentoPorMes[mesAno].estoque += (reg.quantidade || 1);
             });
             const mesesLabels = Object.keys(agrupamentoPorMes);
             const nomesMeses = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
-            const labelsLegiveis = mesesLabels.map(ma => `${nomesMeses[ma.split('/')[0]]}/${ma.split('/')[1].substring(2)}`);
-            const colorirColuna = (valor, limite) => (limite <= 0) ? '#64748b' : (valor > limite ? '#ef4444' : '#10b981');
-            const bgProducao = mesesLabels.map(m => colorirColuna(agrupamentoPorMes[m].producao, metas.producaoMensal));
-            const bgEstoque = mesesLabels.map(m => colorirColuna(agrupamentoPorMes[m].estoque, metas.estoqueMensal));
-            const textColor = isDarkMode.value ? '#94a3b8' : '#64748b'; const gridColor = isDarkMode.value ? '#334155' : '#f1f5f9';
+            const bgProducao = mesesLabels.map(m => agrupamentoPorMes[m].producao > metas.producaoMensal ? '#ef4444' : '#10b981');
+            const bgEstoque = mesesLabels.map(m => agrupamentoPorMes[m].estoque > metas.estoqueMensal ? '#ef4444' : '#10b981');
+            const tc = isDarkMode.value ? '#94a3b8' : '#64748b'; const gc = isDarkMode.value ? '#334155' : '#f1f5f9';
 
-            chartInstance.value = new Chart(ctx, {
-                type: 'bar',
-                data: { labels: labelsLegiveis, datasets: [{ label: 'Produção', data: mesesLabels.map(m => agrupamentoPorMes[m].producao), backgroundColor: bgProducao, borderRadius: 4 }, { label: 'Estoque', data: mesesLabels.map(m => agrupamentoPorMes[m].estoque), backgroundColor: bgEstoque, borderRadius: 4 }] },
-                options: { responsive: true, maintainAspectRatio: false, animation: { duration: 800 }, scales: { x: { ticks: { color: textColor }, grid: { color: gridColor, drawBorder: false } }, y: { ticks: { color: textColor }, grid: { color: gridColor, drawBorder: false } } }, plugins: { legend: { labels: { color: textColor } } } }
-            });
+            chartInstance.value = new Chart(ctx, { type: 'bar', data: { labels: mesesLabels.map(ma => `${nomesMeses[ma.split('/')[0]]}/${ma.split('/')[1].substring(2)}`), datasets: [{ label: 'Produção', data: mesesLabels.map(m => agrupamentoPorMes[m].producao), backgroundColor: bgProducao, borderRadius: 4 }, { label: 'Estoque', data: mesesLabels.map(m => agrupamentoPorMes[m].estoque), backgroundColor: bgEstoque, borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: tc }, grid: { color: gc, drawBorder: false } }, y: { ticks: { color: tc }, grid: { color: gc, drawBorder: false } } }, plugins: { legend: { labels: { color: tc } } } } });
         };
 
-        watch(currentTab, (newTab) => { if (newTab === 'dashboard') { setTimeout(() => renderizarGraficoEvolucao(), 350); } });
+        watch(currentTab, (newTab) => { if (newTab === 'dashboard') setTimeout(renderizarGraficoEvolucao, 350); });
 
         return {
-            currentTab, menuMobileAberto, mudarAba, carregando, isDarkMode, toggleTheme, regraAtiva, salvarRegra,
-            form, salvarRegistro, mensagemSucesso, modalEdicao, abrirEdicao, salvarEdicao, visaoMetas, metas, salvarConfiguracoes, 
-            totalProducao, totalEstoque, percentualProducao, percentualEstoque, limiteProducao, limiteEstoque,
-            registros, abaHistorico, filtros, historicoFiltrado, limparFiltros, deletarRegistro, listaCausas, novaCausa, adicionarCausa, removerCausa,
-            listaResponsaveis, novoColaborador, adicionarColaborador, removerColaborador, statusEquipe,
-            destaquesEquipe, modalRaioX, abrirRaioX // Exportando as novas funções
+            usuarioLogado, loginForm, erroLogin, fazerLogin, fazerLogout, salvarSessao, currentTab, menuMobileAberto, mudarAba, carregando, isDarkMode, toggleTheme, regraAtiva, salvarRegra,
+            form, salvarRegistro, mensagemSucesso, modalEdicao, abrirEdicao, salvarEdicao, visaoMetas, metas, salvarConfiguracoes, totalProducao, totalEstoque, percentualProducao, percentualEstoque, limiteProducao, limiteEstoque,
+            registros, abaHistorico, filtros, historicoFiltrado, limparFiltros, deletarRegistro, listaCausas, novaCausa, adicionarCausa, removerCausa, listaResponsaveis, novoColaborador, adicionarColaborador, removerColaborador, statusEquipe, destaquesEquipe, modalRaioX, abrirRaioX
         }
     }
 }).mount('#app')
