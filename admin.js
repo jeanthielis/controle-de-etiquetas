@@ -1,6 +1,6 @@
 import { createApp, ref, reactive, computed, watch, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
 import { db } from './firebase-config.js'; 
-import { collection, addDoc, onSnapshot, query, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, addDoc, onSnapshot, query, deleteDoc, doc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 createApp({
     setup() {
@@ -8,6 +8,8 @@ createApp({
         const usuarios = ref([]);
         const registros = ref([]);
         const modalAberto = ref(false);
+        const modoEdicao = ref(false);
+        const idUsuarioEdicao = ref(null);
         const chartInstance = ref(null);
 
         const form = reactive({
@@ -21,37 +23,52 @@ createApp({
         onMounted(() => {
             document.documentElement.classList.toggle('dark', localStorage.getItem('qc_theme') === 'dark');
 
-            // 1. Monitorar Usuários Cadastrados e Proteger Rota
+            // 1. Monitorar Usuários Cadastrados
             const qUsuarios = query(collection(db, "usuarios"));
             onSnapshot(qUsuarios, (snapshot) => {
                 const lista = [];
-                snapshot.forEach((doc) => { lista.push({ id: doc.id, ...doc.data() }); });
+                snapshot.forEach((docSnap) => { 
+                    lista.push({ id: docSnap.id, ...docSnap.data() }); 
+                });
                 usuarios.value = lista;
 
-                // PROTEÇÃO DE ROTA (Admin)
+                // PROTEÇÃO DE ROTA
                 if (lista.length > 0) {
                     const loggedUser = JSON.parse(localStorage.getItem('qc_user'));
                     if (!loggedUser || loggedUser.nivelAcesso !== 'Coordenador') {
                         alert("Acesso Restrito! Apenas Coordenadores podem acessar o Painel de Administração.");
                         window.location.href = 'index.html';
                     }
-                } else {
-                    console.warn("Banco de usuários vazio. Modo de configuração inicial ativado.");
                 }
             });
 
-            // 2. Monitorar Registros Gerais (Para o Dashboard)
+            // 2. Monitorar Registros Gerais
             const qRegistros = query(collection(db, "registros"));
             onSnapshot(qRegistros, (snapshot) => {
                 const listaReg = [];
-                snapshot.forEach((doc) => { listaReg.push(doc.data()); });
+                snapshot.forEach((docSnap) => { listaReg.push(docSnap.data()); });
                 registros.value = listaReg;
                 if(currentTab.value === 'dashboard') setTimeout(renderizarGrafico, 300);
             });
         });
 
+        // Função para abrir modal CRIANDO novo usuário
         const abrirModalUsuario = () => {
+            modoEdicao.value = false;
+            idUsuarioEdicao.value = null;
             form.nome = ''; form.email = ''; form.senha = ''; form.nivelAcesso = ''; form.fabricas = [];
+            modalAberto.value = true;
+        };
+
+        // Função para abrir modal EDITANDO usuário existente
+        const abrirEdicaoUsuario = (user) => {
+            modoEdicao.value = true;
+            idUsuarioEdicao.value = user.id;
+            form.nome = user.nome;
+            form.email = user.email;
+            form.senha = ''; // Deixa vazio. Se o admin não digitar nada, a senha antiga é mantida.
+            form.nivelAcesso = user.nivelAcesso;
+            form.fabricas = [...(user.fabricas || [])];
             modalAberto.value = true;
         };
 
@@ -62,23 +79,66 @@ createApp({
             }
 
             try {
-                await addDoc(collection(db, "usuarios"), {
-                    nome: form.nome,
-                    email: form.email,
-                    senha: form.senha, 
-                    nivelAcesso: form.nivelAcesso,
-                    fabricas: [...form.fabricas],
-                    criadoEm: new Date()
-                });
+                if (modoEdicao.value) {
+                    // MODO ATUALIZAÇÃO
+                    const dadosAtualizados = {
+                        nome: form.nome,
+                        email: form.email,
+                        nivelAcesso: form.nivelAcesso,
+                        fabricas: [...form.fabricas]
+                    };
+                    
+                    // Só atualiza a senha no banco se o admin digitou uma senha nova
+                    if (form.senha.trim() !== '') {
+                        dadosAtualizados.senha = form.senha;
+                    }
+
+                    await updateDoc(doc(db, "usuarios", idUsuarioEdicao.value), dadosAtualizados);
+                } else {
+                    // MODO CRIAÇÃO
+                    await addDoc(collection(db, "usuarios"), {
+                        nome: form.nome,
+                        email: form.email,
+                        senha: form.senha, 
+                        nivelAcesso: form.nivelAcesso,
+                        fabricas: [...form.fabricas],
+                        criadoEm: new Date()
+                    });
+                }
                 modalAberto.value = false;
             } catch (error) {
-                console.error("Erro ao cadastrar usuário:", error);
+                console.error("Erro ao salvar usuário:", error);
             }
         };
 
         const deletarUsuario = async (id) => {
             if(confirm("Tem certeza que deseja revogar o acesso deste usuário permanentemente?")) {
                 await deleteDoc(doc(db, "usuarios", id));
+            }
+        };
+
+        // Função de Migração de Dados
+        const migrarDadosAntigos = async () => {
+            if(!confirm("Isso vai mover todos os apontamentos sem fábrica definida para a Fábrica 2. Deseja continuar?")) return;
+            try {
+                const q = query(collection(db, "registros"));
+                const snapshot = await getDocs(q);
+                let atualizados = 0;
+                const promessas = [];
+
+                snapshot.forEach((documento) => {
+                    const dado = documento.data();
+                    if (!dado.fabrica || dado.fabrica !== 'Fábrica 2') {
+                        promessas.push(updateDoc(doc(db, "registros", documento.id), { fabrica: 'Fábrica 2' }));
+                        atualizados++;
+                    }
+                });
+
+                await Promise.all(promessas);
+                alert(`Migração concluída com sucesso! ${atualizados} apontamentos foram movidos para a Fábrica 2.`);
+            } catch (error) {
+                console.error(error);
+                alert("Erro ao tentar migrar os dados.");
             }
         };
 
@@ -127,8 +187,9 @@ createApp({
         watch(currentTab, (newTab) => { if (newTab === 'dashboard') setTimeout(renderizarGrafico, 300); });
 
         return {
-            currentTab, usuarios, registros, modalAberto, form,
-            abrirModalUsuario, salvarUsuario, deletarUsuario, totalFabrica1, totalFabrica2
+            currentTab, usuarios, registros, modalAberto, modoEdicao, form,
+            abrirModalUsuario, abrirEdicaoUsuario, salvarUsuario, deletarUsuario, migrarDadosAntigos,
+            totalFabrica1, totalFabrica2
         }
     }
 }).mount('#admin-app');
