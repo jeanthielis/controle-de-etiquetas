@@ -3,13 +3,13 @@ import { db } from './firebase-config.js';
 import { collection, addDoc, onSnapshot, query, updateDoc, deleteDoc, doc, setDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const gerarDataAtualInput = () => {
-    const agora = new Date(); const offset = agora.getTimezoneOffset() * 60000;
+    const agora = new Date(); 
+    const offset = agora.getTimezoneOffset() * 60000;
     return new Date(agora.getTime() - offset).toISOString().slice(0, 16);
 };
 
 createApp({
     setup() {
-        // SISTEMA DE AUTENTICAÇÃO
         const usuarioLogado = ref(JSON.parse(localStorage.getItem('qc_user')) || null);
         const loginForm = reactive({ email: '', senha: '' });
         const erroLogin = ref('');
@@ -38,7 +38,6 @@ createApp({
         const filtros = reactive({ causa: '', responsavel: '' });
         const form = reactive({ local: '', causa: '', responsavel: '', quantidade: 1, dataOcorrencia: gerarDataAtualInput(), contabilizar: true });
         
-        // Agora, 'registrosGerais' guarda tudo, e 'registros' filtra pela fábrica atual
         const registrosGerais = ref([]);
         const registros = computed(() => {
             if (!usuarioLogado.value) return [];
@@ -48,34 +47,51 @@ createApp({
         const modalEdicao = reactive({ aberto: false, id: null, local: '', causa: '', responsavel: '', quantidade: 1, dataOcorrencia: '', contabilizar: true });
         const modalRaioX = reactive({ aberto: false, nome: '', total: 0, causaFrequente: '', ultimos: [] });
 
-        const novaCausa = ref(''); const novoColaborador = ref('');
+        const novaCausa = ref(''); 
+        const novoColaborador = ref('');
 
-        // ----------------------------------------------------
-        // FUNÇÕES DE LOGIN E SESSÃO
-        // ----------------------------------------------------
         const fazerLogin = async () => {
-            erroLogin.value = ''; carregando.value = true;
+            erroLogin.value = ''; 
+            carregando.value = true;
             try {
                 const q = query(collection(db, "usuarios"), where("email", "==", loginForm.email), where("senha", "==", loginForm.senha));
                 const querySnapshot = await getDocs(q);
                 if (!querySnapshot.empty) {
-                    const docUser = querySnapshot.docs[0]; const data = docUser.data();
-                    usuarioLogado.value = { id: docUser.id, nome: data.nome, email: data.email, nivelAcesso: data.nivelAcesso, fabricas: data.fabricas, fabricaAtual: data.fabricas[0] };
+                    const docUser = querySnapshot.docs[0]; 
+                    const data = docUser.data();
+                    usuarioLogado.value = { 
+                        id: docUser.id, 
+                        nome: data.nome, 
+                        email: data.email, 
+                        nivelAcesso: data.nivelAcesso, 
+                        fabricas: data.fabricas, 
+                        fabricaAtual: data.fabricas[0] 
+                    };
                     salvarSessao();
-                    loginForm.email = ''; loginForm.senha = '';
+                    loginForm.email = ''; 
+                    loginForm.senha = '';
                     currentTab.value = 'dashboard';
                     iniciarMonitoramentoBanco();
-                } else { erroLogin.value = 'Acesso Negado. Verifique os dados.'; }
-            } catch (e) { erroLogin.value = 'Erro de conexão com servidor.'; } 
-            finally { carregando.value = false; }
+                } else { 
+                    erroLogin.value = 'Acesso Negado. Verifique os dados.'; 
+                }
+            } catch (e) { 
+                erroLogin.value = 'Erro de conexão com servidor.'; 
+            } finally { 
+                carregando.value = false; 
+            }
         };
 
-        const fazerLogout = () => { usuarioLogado.value = null; localStorage.removeItem('qc_user'); };
-        const salvarSessao = () => { localStorage.setItem('qc_user', JSON.stringify(usuarioLogado.value)); if (currentTab.value === 'dashboard') setTimeout(renderizarGraficoEvolucao, 100); };
+        const fazerLogout = () => { 
+            usuarioLogado.value = null; 
+            localStorage.removeItem('qc_user'); 
+        };
+        
+        const salvarSessao = () => { 
+            localStorage.setItem('qc_user', JSON.stringify(usuarioLogado.value)); 
+            if (currentTab.value === 'dashboard') setTimeout(renderizarGraficoEvolucao, 100); 
+        };
 
-        // ----------------------------------------------------
-        // INICIALIZAÇÃO
-        // ----------------------------------------------------
         const iniciarMonitoramentoBanco = () => {
             if (!usuarioLogado.value) return;
             carregando.value = true;
@@ -97,10 +113,31 @@ createApp({
                 snapshot.forEach((doc) => {
                     const dado = doc.data();
                     let timestampRaw = dado.timestamp || null;
-                    let tempoMilisegundos = timestampRaw ? timestampRaw.toDate().getTime() : 0;
-                    let dataFormatada = timestampRaw ? `${timestampRaw.toDate().getDate().toString().padStart(2, '0')}/${(timestampRaw.toDate().getMonth()+1).toString().padStart(2, '0')} ${timestampRaw.toDate().getHours().toString().padStart(2, '0')}:${timestampRaw.toDate().getMinutes().toString().padStart(2, '0')}` : '';
+                    let tempoMilisegundos = 0;
+                    let dataFormatada = '';
+                    
+                    if (timestampRaw) {
+                        const d = timestampRaw.toDate();
+                        tempoMilisegundos = d.getTime();
+                        const dia = d.getDate().toString().padStart(2, '0');
+                        const mes = (d.getMonth() + 1).toString().padStart(2, '0');
+                        const hora = d.getHours().toString().padStart(2, '0');
+                        const min = d.getMinutes().toString().padStart(2, '0');
+                        dataFormatada = `${dia}/${mes} ${hora}:${min}`;
+                    }
 
-                    dadosMapeados.push({ id: doc.id, local: dado.local, causa: dado.causa, responsavel: dado.responsavel, quantidade: dado.quantidade || 1, dataHoraFormatada: dataFormatada, timestampRaw: timestampRaw, ordenacaoTempo: tempoMilisegundos, contabilizar: dado.contabilizar !== false, fabrica: dado.fabrica || 'Fábrica 1' });
+                    dadosMapeados.push({ 
+                        id: doc.id, 
+                        local: dado.local, 
+                        causa: dado.causa, 
+                        responsavel: dado.responsavel, 
+                        quantidade: dado.quantidade || 1, 
+                        dataHoraFormatada: dataFormatada, 
+                        timestampRaw: timestampRaw, 
+                        ordenacaoTempo: tempoMilisegundos, 
+                        contabilizar: dado.contabilizar !== false, 
+                        fabrica: dado.fabrica || 'Fábrica 1' 
+                    });
                 });
 
                 dadosMapeados.sort((a, b) => b.ordenacaoTempo - a.ordenacaoTempo);
@@ -115,9 +152,6 @@ createApp({
             if(usuarioLogado.value) iniciarMonitoramentoBanco();
         });
 
-        // ----------------------------------------------------
-        // FUNÇÕES OPERACIONAIS DA APLICAÇÃO
-        // ----------------------------------------------------
         const salvarConfiguracoes = async () => { await setDoc(doc(db, "configuracoes", "geral"), { regraAtiva: regraAtiva.value, metas: { ...metas }, causas: listaCausas.value, responsaveis: listaResponsaveis.value }, { merge: true }); };
         const salvarRegra = () => salvarConfiguracoes();
         const adicionarCausa = () => { if(novaCausa.value.trim()){ listaCausas.value.push(novaCausa.value.trim()); novaCausa.value = ''; salvarConfiguracoes(); } };
@@ -131,9 +165,13 @@ createApp({
         const salvarRegistro = async () => {
             try {
                 await addDoc(collection(db, "registros"), {
-                    local: form.local, causa: form.causa, responsavel: form.responsavel, 
-                    quantidade: form.quantidade, timestamp: new Date(form.dataOcorrencia), contabilizar: form.contabilizar,
-                    fabrica: usuarioLogado.value.fabricaAtual // Vincula o lançamento à fábrica ativa!
+                    local: form.local, 
+                    causa: form.causa, 
+                    responsavel: form.responsavel, 
+                    quantidade: form.quantidade, 
+                    timestamp: new Date(form.dataOcorrencia), 
+                    contabilizar: form.contabilizar,
+                    fabrica: usuarioLogado.value.fabricaAtual
                 });
                 form.local = ''; form.causa = ''; form.responsavel = ''; form.quantidade = 1; form.dataOcorrencia = gerarDataAtualInput(); form.contabilizar = true; 
                 mensagemSucesso.value = true; setTimeout(() => { mensagemSucesso.value = false; }, 2000);
@@ -158,9 +196,6 @@ createApp({
             modalRaioX.aberto = true;
         };
 
-        // ----------------------------------------------------
-        // INTELIGÊNCIA E DADOS COMPUTADOS
-        // ----------------------------------------------------
         const statusEquipe = computed(() => {
             const dataLimite = new Date(); dataLimite.setDate(dataLimite.getDate() - 60);
             return listaResponsaveis.value.map(resp => {
@@ -197,7 +232,11 @@ createApp({
             const agrupamentoPorMes = {};
             [...registros.value].reverse().forEach(reg => {
                 if(!reg.timestampRaw) return;
-                const d = reg.timestampRaw.toDate(); const mesAno = `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+                const d = reg.timestampRaw.toDate(); 
+                const mes = (d.getMonth() + 1).toString().padStart(2, '0');
+                const ano = d.getFullYear();
+                const mesAno = `${mes}/${ano}`;
+                
                 if (!agrupamentoPorMes[mesAno]) agrupamentoPorMes[mesAno] = { producao: 0, estoque: 0 };
                 if (reg.local === 'Produção') agrupamentoPorMes[mesAno].producao += (reg.quantidade || 1);
                 else if (reg.local === 'Estoque') agrupamentoPorMes[mesAno].estoque += (reg.quantidade || 1);
@@ -206,9 +245,29 @@ createApp({
             const nomesMeses = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
             const bgProducao = mesesLabels.map(m => agrupamentoPorMes[m].producao > metas.producaoMensal ? '#ef4444' : '#10b981');
             const bgEstoque = mesesLabels.map(m => agrupamentoPorMes[m].estoque > metas.estoqueMensal ? '#ef4444' : '#10b981');
-            const tc = isDarkMode.value ? '#94a3b8' : '#64748b'; const gc = isDarkMode.value ? '#334155' : '#f1f5f9';
+            
+            const tc = isDarkMode.value ? '#94a3b8' : '#64748b'; 
+            const gc = isDarkMode.value ? '#334155' : '#f1f5f9';
 
-            chartInstance.value = new Chart(ctx, { type: 'bar', data: { labels: mesesLabels.map(ma => `${nomesMeses[ma.split('/')[0]]}/${ma.split('/')[1].substring(2)}`), datasets: [{ label: 'Produção', data: mesesLabels.map(m => agrupamentoPorMes[m].producao), backgroundColor: bgProducao, borderRadius: 4 }, { label: 'Estoque', data: mesesLabels.map(m => agrupamentoPorMes[m].estoque), backgroundColor: bgEstoque, borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: tc }, grid: { color: gc, drawBorder: false } }, y: { ticks: { color: tc }, grid: { color: gc, drawBorder: false } } }, plugins: { legend: { labels: { color: tc } } } } });
+            chartInstance.value = new Chart(ctx, { 
+                type: 'bar', 
+                data: { 
+                    labels: mesesLabels.map(ma => `${nomesMeses[ma.split('/')[0]]}/${ma.split('/')[1].substring(2)}`), 
+                    datasets: [
+                        { label: 'Produção', data: mesesLabels.map(m => agrupamentoPorMes[m].producao), backgroundColor: bgProducao, borderRadius: 4 }, 
+                        { label: 'Estoque', data: mesesLabels.map(m => agrupamentoPorMes[m].estoque), backgroundColor: bgEstoque, borderRadius: 4 }
+                    ] 
+                }, 
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    scales: { 
+                        x: { ticks: { color: tc }, grid: { color: gc, drawBorder: false } }, 
+                        y: { ticks: { color: tc }, grid: { color: gc, drawBorder: false } } 
+                    }, 
+                    plugins: { legend: { labels: { color: tc } } } 
+                } 
+            });
         };
 
         watch(currentTab, (newTab) => { if (newTab === 'dashboard') setTimeout(renderizarGraficoEvolucao, 350); });
