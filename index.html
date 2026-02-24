@@ -86,22 +86,41 @@
         <aside :class="menuMobileAberto ? 'translate-x-0' : '-translate-x-full'" class="fixed md:relative inset-y-0 left-0 w-72 bg-[#0B1121] text-slate-300 flex flex-col shadow-2xl z-50 transform md:translate-x-0 transition-transform duration-300 ease-in-out h-full border-r border-slate-800">
             <div class="p-8 text-center border-b border-slate-800/60">
                 <div class="flex items-center justify-center gap-3 mb-2">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30"><i class="ph-bold ph-chart-line-up text-white text-xl"></i></div>
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                        <i class="ph-bold ph-chart-line-up text-white text-xl"></i>
+                    </div>
                     <h1 class="text-2xl font-extrabold tracking-tight text-white">Quali<span class="text-indigo-400">Track</span></h1>
                 </div>
             </div>
             
             <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-                <button @click="mudarAba('dashboard')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'dashboard', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'dashboard'}"><i class="text-2xl" :class="currentTab === 'dashboard' ? 'ph-fill ph-chart-pie-slice' : 'ph ph-chart-pie-slice'"></i> Visão Analítica</button>
-                <button @click="mudarAba('lancamento')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'lancamento', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'lancamento'}"><i class="text-2xl" :class="currentTab === 'lancamento' ? 'ph-fill ph-plus-circle' : 'ph ph-plus-circle'"></i> Registrar Apontamento</button>
+                <button @click="mudarAba('dashboard')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="currentTab === 'dashboard' ? 'bg-indigo-600/10 text-indigo-400 border-indigo-500' : 'border-transparent hover:bg-slate-800/50 hover:text-white'">
+                    <i class="text-2xl" :class="currentTab === 'dashboard' ? 'ph-fill ph-chart-pie-slice' : 'ph ph-chart-pie-slice'"></i> Visão Analítica
+                </button>
                 
-                <button v-if="usuarioLogado.nivelAcesso !== 'Técnico'" @click="mudarAba('consequencias')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'consequencias', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'consequencias'}"><i class="text-2xl" :class="currentTab === 'consequencias' ? 'ph-fill ph-gavel' : 'ph ph-gavel'"></i> Gestão de Consequências</button>
-                <button v-if="usuarioLogado.nivelAcesso !== 'Técnico'" @click="mudarAba('historico')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'historico', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'historico'}"><i class="text-2xl" :class="currentTab === 'historico' ? 'ph-fill ph-clock-counter-clockwise' : 'ph ph-clock-counter-clockwise'"></i> Histórico e Filtros</button>
-                <button v-if="usuarioLogado.nivelAcesso !== 'Técnico'" @click="mudarAba('configuracoes')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'configuracoes', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'configuracoes'}"><i class="text-2xl" :class="currentTab === 'configuracoes' ? 'ph-fill ph-sliders-horizontal' : 'ph ph-sliders-horizontal'"></i> Painel de Controle</button>
+                <button @click="mudarAba('lancamento')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="currentTab === 'lancamento' ? 'bg-indigo-600/10 text-indigo-400 border-indigo-500' : 'border-transparent hover:bg-slate-800/50 hover:text-white'">
+                    <i class="text-2xl" :class="currentTab === 'lancamento' ? 'ph-fill ph-plus-circle' : 'ph ph-plus-circle'"></i> Registrar Apontamento
+                </button>
+                
+                <template v-if="usuarioLogado.nivelAcesso !== 'Técnico'">
+                    <button @click="mudarAba('consequencias')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="currentTab === 'consequencias' ? 'bg-indigo-600/10 text-indigo-400 border-indigo-500' : 'border-transparent hover:bg-slate-800/50 hover:text-white'">
+                        <i class="text-2xl" :class="currentTab === 'consequencias' ? 'ph-fill ph-gavel' : 'ph ph-gavel'"></i> Gestão de Consequências
+                    </button>
+                    
+                    <button @click="mudarAba('historico')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="currentTab === 'historico' ? 'bg-indigo-600/10 text-indigo-400 border-indigo-500' : 'border-transparent hover:bg-slate-800/50 hover:text-white'">
+                        <i class="text-2xl" :class="currentTab === 'historico' ? 'ph-fill ph-clock-counter-clockwise' : 'ph ph-clock-counter-clockwise'"></i> Histórico e Filtros
+                    </button>
+                    
+                    <button @click="mudarAba('configuracoes')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="currentTab === 'configuracoes' ? 'bg-indigo-600/10 text-indigo-400 border-indigo-500' : 'border-transparent hover:bg-slate-800/50 hover:text-white'">
+                        <i class="text-2xl" :class="currentTab === 'configuracoes' ? 'ph-fill ph-sliders-horizontal' : 'ph ph-sliders-horizontal'"></i> Painel de Controle
+                    </button>
+                </template>
 
-                <a v-if="usuarioLogado.nivelAcesso === 'Coordenador'" href="admin.html" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-transparent hover:bg-slate-800/50 hover:text-white text-indigo-400 font-medium mt-4 border-t border-slate-800 pt-6">
-                    <i class="text-2xl ph-fill ph-shield-check"></i> Menu Administração
-                </a>
+                <template v-if="usuarioLogado.nivelAcesso === 'Coordenador'">
+                    <a href="admin.html" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-transparent hover:bg-slate-800/50 hover:text-white text-indigo-400 font-medium mt-4 border-t border-slate-800 pt-6">
+                        <i class="text-2xl ph-fill ph-shield-check"></i> Menu Administração
+                    </a>
+                </template>
             </nav>
 
             <div class="px-6 mb-4" v-if="usuarioLogado.fabricas && usuarioLogado.fabricas.length > 1">
@@ -123,7 +142,9 @@
 
             <div class="p-6 m-4 mt-0 bg-slate-800/40 rounded-2xl border border-slate-700/50 flex items-center justify-between">
                 <div class="flex items-center gap-3 overflow-hidden">
-                    <div class="w-10 h-10 rounded-full bg-indigo-900/50 flex items-center justify-center border border-indigo-500/30 text-indigo-300 shrink-0"><i class="ph-fill ph-user text-xl"></i></div>
+                    <div class="w-10 h-10 rounded-full bg-indigo-900/50 flex items-center justify-center border border-indigo-500/30 text-indigo-300 shrink-0">
+                        <i class="ph-fill ph-user text-xl"></i>
+                    </div>
                     <div class="overflow-hidden">
                         <p class="font-bold text-white text-sm truncate">{{ usuarioLogado.nome }}</p>
                         <p class="text-[10px] text-indigo-400 uppercase tracking-wider font-bold truncate">
@@ -154,50 +175,60 @@
                             <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Metas e perdas da <span class="font-bold text-indigo-500">{{ usuarioLogado.fabricaAtual }}</span>.</p>
                         </div>
                         <div class="bg-white dark:bg-slate-800 p-1 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 inline-flex">
-                            <button @click="visaoMetas = 'mensal'" class="px-5 py-2.5 rounded-lg text-sm transition-all" :class="{'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600': visaoMetas === 'mensal', 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200': visaoMetas !== 'mensal'}">Mês Vigente</button>
-                            <button @click="visaoMetas = 'anual'" class="px-5 py-2.5 rounded-lg text-sm transition-all" :class="{'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600': visaoMetas === 'anual', 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200': visaoMetas !== 'anual'}">Acumulado Anual</button>
+                            <button 
+                                @click="visaoMetas = 'mensal'" 
+                                class="px-5 py-2.5 rounded-lg text-sm transition-all" 
+                                :class="visaoMetas === 'mensal' ? 'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'">
+                                Mês Vigente
+                            </button>
+                            <button 
+                                @click="visaoMetas = 'anual'" 
+                                class="px-5 py-2.5 rounded-lg text-sm transition-all" 
+                                :class="visaoMetas === 'anual' ? 'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'">
+                                Acumulado Anual
+                            </button>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                         <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden transition-colors" :class="{ 'border-red-300 dark:border-red-900 shadow-red-100/50': totalProducao > limiteProducao }">
-                            <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] -z-0 transition-colors" :class="{'bg-red-50 dark:bg-red-900/10': totalProducao > limiteProducao, 'bg-emerald-50 dark:bg-emerald-900/10': totalProducao <= limiteProducao}"></div>
+                            <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] -z-0 transition-colors" :class="totalProducao > limiteProducao ? 'bg-red-50 dark:bg-red-900/10' : 'bg-emerald-50 dark:bg-emerald-900/10'"></div>
                             <div class="relative z-10">
                                 <div class="flex items-center justify-between mb-4">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" :class="{'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400': totalProducao > limiteProducao, 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400': totalProducao <= limiteProducao}">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" :class="totalProducao > limiteProducao ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'">
                                             <i class="ph-fill ph-factory text-xl"></i>
                                         </div>
-                                        <h3 class="font-bold text-sm uppercase tracking-wider transition-colors" :class="{'text-red-600 dark:text-red-400': totalProducao > limiteProducao, 'text-emerald-600 dark:text-emerald-400': totalProducao <= limiteProducao}">Desvios Produção</h3>
+                                        <h3 class="font-bold text-sm uppercase tracking-wider transition-colors" :class="totalProducao > limiteProducao ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">Desvios Produção</h3>
                                     </div>
                                 </div>
                                 <div class="flex items-end gap-3 mb-6">
-                                    <span class="text-5xl font-black transition-colors" :class="{'text-red-600 dark:text-red-400': totalProducao > limiteProducao, 'text-emerald-600 dark:text-emerald-400': totalProducao <= limiteProducao}">{{ totalProducao }}</span>
+                                    <span class="text-5xl font-black transition-colors" :class="totalProducao > limiteProducao ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">{{ totalProducao }}</span>
                                     <span class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-1 border-l-2 border-slate-200 dark:border-slate-700 pl-3">Meta: <span class="text-slate-700 dark:text-slate-200 font-bold">{{ limiteProducao }}</span></span>
                                 </div>
                                 <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden shadow-inner">
-                                    <div class="h-full rounded-full transition-all duration-1000 ease-out" :class="{'bg-gradient-to-r from-red-400 to-red-600': totalProducao > limiteProducao, 'bg-gradient-to-r from-emerald-400 to-emerald-600': totalProducao <= limiteProducao}" :style="{ width: Math.min(percentualProducao, 100) + '%' }"></div>
+                                    <div class="h-full rounded-full transition-all duration-1000 ease-out" :class="totalProducao > limiteProducao ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-emerald-400 to-emerald-600'" :style="{ width: Math.min(percentualProducao, 100) + '%' }"></div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden transition-colors" :class="{ 'border-red-300 dark:border-red-900 shadow-red-100/50': totalEstoque > limiteEstoque }">
-                            <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] -z-0 transition-colors" :class="{'bg-red-50 dark:bg-red-900/10': totalEstoque > limiteEstoque, 'bg-emerald-50 dark:bg-emerald-900/10': totalEstoque <= limiteEstoque}"></div>
+                            <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] -z-0 transition-colors" :class="totalEstoque > limiteEstoque ? 'bg-red-50 dark:bg-red-900/10' : 'bg-emerald-50 dark:bg-emerald-900/10'"></div>
                             <div class="relative z-10">
                                 <div class="flex items-center justify-between mb-4">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" :class="{'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400': totalEstoque > limiteEstoque, 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400': totalEstoque <= limiteEstoque}">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" :class="totalEstoque > limiteEstoque ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'">
                                             <i class="ph-fill ph-package text-xl"></i>
                                         </div>
-                                        <h3 class="font-bold text-sm uppercase tracking-wider transition-colors" :class="{'text-red-600 dark:text-red-400': totalEstoque > limiteEstoque, 'text-emerald-600 dark:text-emerald-400': totalEstoque <= limiteEstoque}">Desvios Estoque</h3>
+                                        <h3 class="font-bold text-sm uppercase tracking-wider transition-colors" :class="totalEstoque > limiteEstoque ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">Desvios Estoque</h3>
                                     </div>
                                 </div>
                                 <div class="flex items-end gap-3 mb-6">
-                                    <span class="text-5xl font-black transition-colors" :class="{'text-red-600 dark:text-red-400': totalEstoque > limiteEstoque, 'text-emerald-600 dark:text-emerald-400': totalEstoque <= limiteEstoque}">{{ totalEstoque }}</span>
+                                    <span class="text-5xl font-black transition-colors" :class="totalEstoque > limiteEstoque ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">{{ totalEstoque }}</span>
                                     <span class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-1 border-l-2 border-slate-200 dark:border-slate-700 pl-3">Meta: <span class="text-slate-700 dark:text-slate-200 font-bold">{{ limiteEstoque }}</span></span>
                                 </div>
                                 <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden shadow-inner">
-                                    <div class="h-full rounded-full transition-all duration-1000 ease-out" :class="{'bg-gradient-to-r from-red-400 to-red-600': totalEstoque > limiteEstoque, 'bg-gradient-to-r from-emerald-400 to-emerald-600': totalEstoque <= limiteEstoque}" :style="{ width: Math.min(percentualEstoque, 100) + '%' }"></div>
+                                    <div class="h-full rounded-full transition-all duration-1000 ease-out" :class="totalEstoque > limiteEstoque ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-emerald-400 to-emerald-600'" :style="{ width: Math.min(percentualEstoque, 100) + '%' }"></div>
                                 </div>
                             </div>
                         </div>
@@ -250,19 +281,43 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <label class="relative cursor-pointer group">
                                     <input type="radio" v-model="form.local" value="Produção" class="peer sr-only" required>
-                                    <div class="p-6 rounded-2xl border-2 border-slate-200 dark:border-slate-600 peer-checked:border-rose-500 dark:peer-checked:border-rose-500 peer-checked:bg-rose-50 dark:peer-checked:bg-rose-900/20 transition-all flex flex-col items-center justify-center gap-3"><i class="ph-fill ph-factory text-3xl text-slate-400 peer-checked:text-rose-600"></i><span class="font-bold text-slate-600 peer-checked:text-rose-700">Linha de Produção</span></div>
+                                    <div class="p-6 rounded-2xl border-2 border-slate-200 dark:border-slate-600 peer-checked:border-rose-500 dark:peer-checked:border-rose-500 peer-checked:bg-rose-50 dark:peer-checked:bg-rose-900/20 transition-all flex flex-col items-center justify-center gap-3">
+                                        <i class="ph-fill ph-factory text-3xl text-slate-400 peer-checked:text-rose-600"></i>
+                                        <span class="font-bold text-slate-600 peer-checked:text-rose-700">Linha de Produção</span>
+                                    </div>
                                 </label>
                                 <label class="relative cursor-pointer group">
                                     <input type="radio" v-model="form.local" value="Estoque" class="peer sr-only">
-                                    <div class="p-6 rounded-2xl border-2 border-slate-200 dark:border-slate-600 peer-checked:border-cyan-500 dark:peer-checked:border-cyan-500 peer-checked:bg-cyan-50 dark:peer-checked:bg-cyan-900/20 transition-all flex flex-col items-center justify-center gap-3"><i class="ph-fill ph-package text-3xl text-slate-400 peer-checked:text-cyan-600"></i><span class="font-bold text-slate-600 peer-checked:text-cyan-700">Área de Estoque</span></div>
+                                    <div class="p-6 rounded-2xl border-2 border-slate-200 dark:border-slate-600 peer-checked:border-cyan-500 dark:peer-checked:border-cyan-500 peer-checked:bg-cyan-50 dark:peer-checked:bg-cyan-900/20 transition-all flex flex-col items-center justify-center gap-3">
+                                        <i class="ph-fill ph-package text-3xl text-slate-400 peer-checked:text-cyan-600"></i>
+                                        <span class="font-bold text-slate-600 peer-checked:text-cyan-700">Área de Estoque</span>
+                                    </div>
                                 </label>
                             </div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8">
-                            <div class="md:col-span-4"><label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Data e Hora</label><input type="datetime-local" v-model="form.dataOcorrencia" class="input-modern" required></div>
-                            <div class="md:col-span-4"><label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Colaborador</label><select v-model="form.responsavel" class="input-modern" required><option value="" disabled selected>Selecionar...</option><option v-for="resp in listaResponsaveis" :value="resp">{{ resp }}</option></select></div>
-                            <div class="md:col-span-3"><label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Motivo</label><select v-model="form.causa" class="input-modern" required><option value="" disabled selected>Diagnóstico...</option><option v-for="causa in listaCausas" :value="causa">{{ causa }}</option></select></div>
-                            <div class="md:col-span-1"><label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Qtd.</label><input type="number" min="1" v-model="form.quantidade" class="input-modern px-2 font-bold text-center text-rose-600" required></div>
+                            <div class="md:col-span-4">
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Data e Hora</label>
+                                <input type="datetime-local" v-model="form.dataOcorrencia" class="input-modern" required>
+                            </div>
+                            <div class="md:col-span-4">
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Colaborador</label>
+                                <select v-model="form.responsavel" class="input-modern" required>
+                                    <option value="" disabled selected>Selecionar...</option>
+                                    <option v-for="resp in listaResponsaveis" :value="resp">{{ resp }}</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-3">
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Motivo</label>
+                                <select v-model="form.causa" class="input-modern" required>
+                                    <option value="" disabled selected>Diagnóstico...</option>
+                                    <option v-for="causa in listaCausas" :value="causa">{{ causa }}</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-1">
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Qtd.</label>
+                                <input type="number" min="1" v-model="form.quantidade" class="input-modern px-2 font-bold text-center text-rose-600" required>
+                            </div>
                         </div>
                         <div class="mb-2 mt-4" v-if="usuarioLogado.nivelAcesso !== 'Técnico'">
                             <label class="flex items-center gap-3 cursor-pointer group w-fit">
@@ -271,8 +326,14 @@
                                 <span class="text-sm font-bold text-slate-700 dark:text-slate-300">Contabilizar Advertência</span>
                             </label>
                         </div>
-                        <div class="border-t border-slate-100 dark:border-slate-700 pt-8 mt-4"><button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg flex justify-center items-center gap-3 text-lg"><i class="ph-bold ph-check text-xl"></i> Gravar Apontamento</button></div>
-                        <p v-if="mensagemSucesso" class="text-emerald-700 bg-emerald-50 border border-emerald-100 p-4 rounded-xl text-center mt-6 font-bold flex justify-center items-center gap-2"><i class="ph-fill ph-check-circle text-xl"></i> Salvo na {{ usuarioLogado.fabricaAtual }}!</p>
+                        <div class="border-t border-slate-100 dark:border-slate-700 pt-8 mt-4">
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg flex justify-center items-center gap-3 text-lg">
+                                <i class="ph-bold ph-check text-xl"></i> Gravar Apontamento
+                            </button>
+                        </div>
+                        <p v-if="mensagemSucesso" class="text-emerald-700 bg-emerald-50 border border-emerald-100 p-4 rounded-xl text-center mt-6 font-bold flex justify-center items-center gap-2">
+                            <i class="ph-fill ph-check-circle text-xl"></i> Salvo na {{ usuarioLogado.fabricaAtual }}!
+                        </p>
                     </form>
                 </div>
 
@@ -280,8 +341,18 @@
                     <div class="mb-8"><h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Base de Conhecimento</h2></div>
                     <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
                         <div class="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 p-2 gap-2">
-                            <button @click="abaHistorico = 'Produção'" class="flex-1 py-3 rounded-xl border font-bold" :class="{'bg-white shadow-sm text-rose-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600': abaHistorico === 'Produção', 'text-slate-500 border-transparent': abaHistorico !== 'Produção'}">Produção</button>
-                            <button @click="abaHistorico = 'Estoque'" class="flex-1 py-3 rounded-xl border font-bold" :class="{'bg-white shadow-sm text-cyan-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600': abaHistorico === 'Estoque', 'text-slate-500 border-transparent': abaHistorico !== 'Estoque'}">Estoque</button>
+                            <button 
+                                @click="abaHistorico = 'Produção'" 
+                                class="flex-1 py-3 rounded-xl border font-bold" 
+                                :class="abaHistorico === 'Produção' ? 'bg-white shadow-sm text-rose-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600' : 'text-slate-500 border-transparent'">
+                                Produção
+                            </button>
+                            <button 
+                                @click="abaHistorico = 'Estoque'" 
+                                class="flex-1 py-3 rounded-xl border font-bold" 
+                                :class="abaHistorico === 'Estoque' ? 'bg-white shadow-sm text-cyan-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600' : 'text-slate-500 border-transparent'">
+                                Estoque
+                            </button>
                         </div>
                         <div class="overflow-x-auto p-4">
                             <table class="w-full text-left border-collapse min-w-[700px]">
@@ -291,7 +362,10 @@
                                 <tbody class="text-sm divide-y divide-slate-100 dark:divide-slate-700">
                                     <tr v-for="reg in historicoFiltrado" :key="reg.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                                         <td class="px-6 py-4 font-bold text-slate-700 dark:text-slate-200">{{ reg.dataHoraFormatada.split(' ')[0] }} <span class="text-xs text-slate-400 font-medium ml-1">{{ reg.dataHoraFormatada.split(' ')[1] }}</span></td>
-                                        <td class="px-6 py-4"><span class="w-2 h-2 inline-block rounded-full mr-2" :class="{'bg-rose-500': abaHistorico === 'Produção', 'bg-cyan-500': abaHistorico === 'Estoque'}"></span><span class="font-semibold">{{ reg.causa }}</span></td>
+                                        <td class="px-6 py-4">
+                                            <span class="w-2 h-2 inline-block rounded-full mr-2" :class="abaHistorico === 'Produção' ? 'bg-rose-500' : 'bg-cyan-500'"></span>
+                                            <span class="font-semibold">{{ reg.causa }}</span>
+                                        </td>
                                         <td class="px-6 py-4 font-medium">{{ reg.responsavel }}</td>
                                         <td class="px-6 py-4 text-center">
                                             <button @click="abrirEdicao(reg)" class="text-slate-400 hover:text-indigo-500 p-2 rounded-lg" title="Editar"><i class="ph-fill ph-pencil-simple text-xl"></i></button>
@@ -305,16 +379,25 @@
                 </div>
 
                 <div v-else-if="currentTab === 'configuracoes'" key="configuracoes" class="max-w-6xl mx-auto pb-10">
-                    <div class="mb-8"><h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Painel de Controle</h2><p class="text-slate-500 dark:text-slate-400 mt-1">Configurações aplicáveis a <span class="font-bold">{{ usuarioLogado.fabricaAtual }}</span>.</p></div>
+                    <div class="mb-8">
+                        <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Painel de Controle</h2>
+                        <p class="text-slate-500 dark:text-slate-400 mt-1">Configurações aplicáveis a <span class="font-bold">{{ usuarioLogado.fabricaAtual }}</span>.</p>
+                    </div>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col transition-colors">
                             <div class="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
                                 <div class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center text-orange-500 dark:text-orange-400"><i class="ph-fill ph-warning-octagon text-2xl"></i></div>
                                 <h3 class="font-bold text-slate-800 dark:text-white text-lg">Cadastro de Causas</h3>
                             </div>
-                            <form @submit.prevent="adicionarCausa" class="flex gap-2 mb-6"><input type="text" v-model="novaCausa" placeholder="Nova falha..." class="input-modern" required><button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 rounded-xl font-bold"><i class="ph-bold ph-plus"></i></button></form>
+                            <form @submit.prevent="adicionarCausa" class="flex gap-2 mb-6">
+                                <input type="text" v-model="novaCausa" placeholder="Nova falha..." class="input-modern" required>
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 rounded-xl font-bold"><i class="ph-bold ph-plus"></i></button>
+                            </form>
                             <div class="flex-1 overflow-y-auto max-h-[300px] pr-2 space-y-3">
-                                <div v-for="(causa, index) in listaCausas" :key="index" class="flex justify-between items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300"><span class="truncate pr-2">{{ causa }}</span><button @click="removerCausa(index)" class="text-slate-400 hover:text-rose-500"><i class="ph-fill ph-trash text-lg"></i></button></div>
+                                <div v-for="(causa, index) in listaCausas" :key="index" class="flex justify-between items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    <span class="truncate pr-2">{{ causa }}</span>
+                                    <button @click="removerCausa(index)" class="text-slate-400 hover:text-rose-500"><i class="ph-fill ph-trash text-lg"></i></button>
+                                </div>
                             </div>
                         </div>
 
@@ -323,9 +406,15 @@
                                 <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400"><i class="ph-fill ph-users-three text-2xl"></i></div>
                                 <h3 class="font-bold text-slate-800 dark:text-white text-lg">Quadro Operacional</h3>
                             </div>
-                            <form @submit.prevent="adicionarColaborador" class="flex gap-2 mb-6 max-w-md"><input type="text" v-model="novoColaborador" placeholder="Nome do colaborador..." class="input-modern" required><button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 rounded-xl font-bold"><i class="ph-bold ph-user-plus"></i></button></form>
+                            <form @submit.prevent="adicionarColaborador" class="flex gap-2 mb-6 max-w-md">
+                                <input type="text" v-model="novoColaborador" placeholder="Nome do colaborador..." class="input-modern" required>
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 rounded-xl font-bold"><i class="ph-bold ph-user-plus"></i></button>
+                            </form>
                             <div class="flex-1 overflow-y-auto max-h-[300px] pr-2 space-y-3">
-                                <div v-for="(colab, index) in listaResponsaveis" :key="index" class="flex justify-between items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300"><span>{{ colab }}</span><button @click="removerColaborador(index)" class="text-slate-400 hover:text-rose-500"><i class="ph-fill ph-trash text-lg"></i></button></div>
+                                <div v-for="(colab, index) in listaResponsaveis" :key="index" class="flex justify-between items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    <span>{{ colab }}</span>
+                                    <button @click="removerColaborador(index)" class="text-slate-400 hover:text-rose-500"><i class="ph-fill ph-trash text-lg"></i></button>
+                                </div>
                             </div>
                         </div>
                     </div>
