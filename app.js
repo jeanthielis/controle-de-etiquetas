@@ -36,7 +36,10 @@ createApp({
         const listaResponsaveis = ref([]); 
 
         const filtros = reactive({ causa: '', responsavel: '' });
-        const form = reactive({ local: '', causa: '', responsavel: '', quantidade: 1, dataOcorrencia: gerarDataAtualInput(), contabilizar: true });
+        const form = reactive({ 
+            local: '', causa: '', responsavel: '', 
+            quantidade: 1, dataOcorrencia: gerarDataAtualInput(), contabilizar: true 
+        });
         
         const registrosGerais = ref([]);
         const registros = computed(() => {
@@ -44,7 +47,7 @@ createApp({
             return registrosGerais.value.filter(r => r.fabrica === usuarioLogado.value.fabricaAtual);
         });
 
-        // PROTEÇÃO AQUI: (c.fabricas || []) garante que não vai quebrar se não tiver fábrica atrelada
+        // FILTRO PARA DROPDOWNS (Exibe apenas os colaboradores da Fábrica Selecionada no Menu)
         const colaboradoresFiltrados = computed(() => {
             if (!usuarioLogado.value || !listaResponsaveis.value) return [];
             return listaResponsaveis.value
@@ -52,17 +55,26 @@ createApp({
                 .map(c => c.nome);
         });
 
+        // FILTRO PARA PAINEL DE CONTROLE (Exibe os colaboradores permitidos pelo Nível de Acesso)
         const responsaveisDoUsuario = computed(() => {
             if (!usuarioLogado.value || !listaResponsaveis.value) return [];
+            
+            // Coordenador vê todos (pois tem acesso a todas as fábricas atreladas a ele)
             if (usuarioLogado.value.nivelAcesso === 'Coordenador') {
                 return listaResponsaveis.value;
             }
+            
+            // Supervisores veem apenas os que operam nas fábricas deles
             return listaResponsaveis.value.filter(colab => 
                 (colab.fabricas || []).some(f => (usuarioLogado.value.fabricas || []).includes(f))
             );
         });
 
-        const modalEdicao = reactive({ aberto: false, id: null, local: '', causa: '', responsavel: '', quantidade: 1, dataOcorrencia: '', contabilizar: true });
+        const modalEdicao = reactive({ 
+            aberto: false, id: null, local: '', causa: '', 
+            responsavel: '', quantidade: 1, dataOcorrencia: '', contabilizar: true 
+        });
+        
         const modalRaioX = reactive({ aberto: false, nome: '', total: 0, causaFrequente: '', ultimos: [] });
         const modalSenha = reactive({ aberto: false, novaSenha: '', confirmarSenha: '', mensagem: '', erro: false });
 
@@ -112,26 +124,39 @@ createApp({
                 snapshot.forEach((docSnap) => {
                     const dado = docSnap.data();
                     
-                    // PROTEÇÃO AQUI: Garante que as datas sejam lidas com segurança
+                    // Tratamento seguro de Data
                     let d = null;
                     if (dado.timestamp) {
                         d = dado.timestamp.toDate ? dado.timestamp.toDate() : new Date(dado.timestamp);
                     }
-                    
                     let tempoMilisegundos = d ? d.getTime() : 0;
                     let dataFormatada = d ? `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}` : '';
 
+                    // AUTO-REPARO DE RESPONSÁVEL: 
+                    // Se durante a migração algo foi salvo como Objeto em vez de Texto, isso corrige na hora.
+                    let nomeResponsavel = dado.responsavel;
+                    if (typeof nomeResponsavel === 'object' && nomeResponsavel !== null) {
+                        nomeResponsavel = nomeResponsavel.nome || 'Indefinido';
+                    }
+
                     dadosMapeados.push({ 
-                        id: docSnap.id, local: dado.local, causa: dado.causa, 
-                        responsavel: dado.responsavel, quantidade: Number(dado.quantidade || 1), 
-                        dataHoraFormatada: dataFormatada, dataObj: d, // Objeto de Data Segura
-                        ordenacaoTempo: tempoMilisegundos, contabilizar: dado.contabilizar !== false, 
+                        id: docSnap.id, 
+                        local: dado.local, 
+                        causa: dado.causa, 
+                        responsavel: nomeResponsavel || 'Indefinido', // Nome Limpo!
+                        quantidade: Number(dado.quantidade || 1), 
+                        dataHoraFormatada: dataFormatada, 
+                        dataObj: d, 
+                        ordenacaoTempo: tempoMilisegundos, 
+                        contabilizar: dado.contabilizar !== false, 
                         fabrica: dado.fabrica || 'Fábrica 1' 
                     });
                 });
+                
                 dadosMapeados.sort((a, b) => b.ordenacaoTempo - a.ordenacaoTempo);
                 registrosGerais.value = dadosMapeados;
                 carregando.value = false;
+                
                 if(currentTab.value === 'dashboard') setTimeout(renderizarGraficoEvolucao, 350);
             });
         };
@@ -149,13 +174,24 @@ createApp({
         
         const adicionarColaborador = () => { 
             if(formColaborador.nome.trim() && formColaborador.fabricas.length > 0){ 
-                listaResponsaveis.value.push({ nome: formColaborador.nome.trim(), fabricas: [...formColaborador.fabricas] }); 
-                formColaborador.nome = ''; formColaborador.fabricas = []; salvarConfiguracoes(); 
-            } else { alert("Preencha o nome e marque pelo menos uma fábrica."); }
+                listaResponsaveis.value.push({
+                    nome: formColaborador.nome.trim(),
+                    fabricas: [...formColaborador.fabricas]
+                }); 
+                formColaborador.nome = ''; 
+                formColaborador.fabricas = [];
+                salvarConfiguracoes(); 
+            } else {
+                alert("Preencha o nome e marque pelo menos uma fábrica.");
+            }
         };
+        
         const removerColaborador = (nomeColaborador) => { 
             const index = listaResponsaveis.value.findIndex(c => c.nome === nomeColaborador);
-            if (index !== -1) { listaResponsaveis.value.splice(index, 1); salvarConfiguracoes(); }
+            if (index !== -1) {
+                listaResponsaveis.value.splice(index, 1); 
+                salvarConfiguracoes(); 
+            }
         };
 
         const mudarAba = (aba) => { currentTab.value = aba; menuMobileAberto.value = false; };
@@ -181,6 +217,7 @@ createApp({
         };
 
         const deletarRegistro = async (id) => { if(confirm("Excluir?")) { await deleteDoc(doc(db, "registros", id)); } };
+        
         const abrirEdicao = (reg) => { 
             modalEdicao.id = reg.id; modalEdicao.local = reg.local; modalEdicao.causa = reg.causa; 
             modalEdicao.responsavel = reg.responsavel; modalEdicao.quantidade = reg.quantidade; modalEdicao.contabilizar = reg.contabilizar;
@@ -205,7 +242,6 @@ createApp({
             modalRaioX.aberto = true;
         };
 
-        // GESTÃO DE CONSEQUÊNCIAS BLINDADA
         const statusEquipe = computed(() => {
             const dataLimite = new Date(); dataLimite.setDate(dataLimite.getDate() - 60);
             return colaboradoresFiltrados.value.map(nomeResp => {
