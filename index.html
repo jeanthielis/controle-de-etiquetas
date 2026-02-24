@@ -23,7 +23,7 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        [v-cloak] { display: none; }
+        [v-cloak] { display: none !important; }
         
         .input-modern { @apply w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 bg-slate-50 dark:bg-slate-900/50 text-slate-700 dark:text-slate-200 outline-none transition-all duration-200 focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600; }
     </style>
@@ -92,12 +92,12 @@
             </div>
             
             <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-                <button @click="mudarAba('dashboard')" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'dashboard', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'dashboard'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'dashboard' ? 'ph-fill ph-chart-pie-slice' : 'ph ph-chart-pie-slice'"></i> Visão Analítica</button>
-                <button @click="mudarAba('lancamento')" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'lancamento', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'lancamento'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'lancamento' ? 'ph-fill ph-plus-circle' : 'ph ph-plus-circle'"></i> Registrar Apontamento</button>
+                <button @click="mudarAba('dashboard')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'dashboard', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'dashboard'}"><i class="text-2xl" :class="currentTab === 'dashboard' ? 'ph-fill ph-chart-pie-slice' : 'ph ph-chart-pie-slice'"></i> Visão Analítica</button>
+                <button @click="mudarAba('lancamento')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'lancamento', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'lancamento'}"><i class="text-2xl" :class="currentTab === 'lancamento' ? 'ph-fill ph-plus-circle' : 'ph ph-plus-circle'"></i> Registrar Apontamento</button>
                 
-                <button v-if="usuarioLogado.nivelAcesso !== 'Técnico'" @click="mudarAba('consequencias')" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'consequencias', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'consequencias'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'consequencias' ? 'ph-fill ph-gavel' : 'ph ph-gavel'"></i> Gestão de Consequências</button>
-                <button v-if="usuarioLogado.nivelAcesso !== 'Técnico'" @click="mudarAba('historico')" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'historico', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'historico'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'historico' ? 'ph-fill ph-clock-counter-clockwise' : 'ph ph-clock-counter-clockwise'"></i> Histórico e Filtros</button>
-                <button v-if="usuarioLogado.nivelAcesso !== 'Técnico'" @click="mudarAba('configuracoes')" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'configuracoes', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'configuracoes'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'configuracoes' ? 'ph-fill ph-sliders-horizontal' : 'ph ph-sliders-horizontal'"></i> Painel de Controle</button>
+                <button v-if="usuarioLogado.nivelAcesso !== 'Técnico'" @click="mudarAba('consequencias')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'consequencias', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'consequencias'}"><i class="text-2xl" :class="currentTab === 'consequencias' ? 'ph-fill ph-gavel' : 'ph ph-gavel'"></i> Gestão de Consequências</button>
+                <button v-if="usuarioLogado.nivelAcesso !== 'Técnico'" @click="mudarAba('historico')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'historico', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'historico'}"><i class="text-2xl" :class="currentTab === 'historico' ? 'ph-fill ph-clock-counter-clockwise' : 'ph ph-clock-counter-clockwise'"></i> Histórico e Filtros</button>
+                <button v-if="usuarioLogado.nivelAcesso !== 'Técnico'" @click="mudarAba('configuracoes')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'configuracoes', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'configuracoes'}"><i class="text-2xl" :class="currentTab === 'configuracoes' ? 'ph-fill ph-sliders-horizontal' : 'ph ph-sliders-horizontal'"></i> Painel de Controle</button>
 
                 <a v-if="usuarioLogado.nivelAcesso === 'Coordenador'" href="admin.html" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-transparent hover:bg-slate-800/50 hover:text-white text-indigo-400 font-medium mt-4 border-t border-slate-800 pt-6">
                     <i class="text-2xl ph-fill ph-shield-check"></i> Menu Administração
@@ -126,7 +126,10 @@
                     <div class="w-10 h-10 rounded-full bg-indigo-900/50 flex items-center justify-center border border-indigo-500/30 text-indigo-300 shrink-0"><i class="ph-fill ph-user text-xl"></i></div>
                     <div class="overflow-hidden">
                         <p class="font-bold text-white text-sm truncate">{{ usuarioLogado.nome }}</p>
-                        <p class="text-[10px] text-indigo-400 uppercase tracking-wider font-bold truncate">{{ usuarioLogado.nivelAcesso }} <span v-if="usuarioLogado.fabricas.length === 1">• {{ usuarioLogado.fabricaAtual }}</span></p>
+                        <p class="text-[10px] text-indigo-400 uppercase tracking-wider font-bold truncate">
+                            {{ usuarioLogado.nivelAcesso }} 
+                            <span v-if="usuarioLogado.fabricas.length === 1">• {{ usuarioLogado.fabricaAtual }}</span>
+                        </p>
                     </div>
                 </div>
                 <button @click="fazerLogout" class="text-slate-500 hover:text-rose-500 bg-slate-900 hover:bg-rose-900/30 p-2 rounded-lg transition-all" title="Sair do Sistema">
@@ -151,50 +154,50 @@
                             <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Metas e perdas da <span class="font-bold text-indigo-500">{{ usuarioLogado.fabricaAtual }}</span>.</p>
                         </div>
                         <div class="bg-white dark:bg-slate-800 p-1 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 inline-flex">
-                            <button @click="visaoMetas = 'mensal'" :class="visaoMetas === 'mensal' ? 'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'" class="px-5 py-2.5 rounded-lg text-sm transition-all">Mês Vigente</button>
-                            <button @click="visaoMetas = 'anual'" :class="visaoMetas === 'anual' ? 'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'" class="px-5 py-2.5 rounded-lg text-sm transition-all">Acumulado Anual</button>
+                            <button @click="visaoMetas = 'mensal'" class="px-5 py-2.5 rounded-lg text-sm transition-all" :class="{'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600': visaoMetas === 'mensal', 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200': visaoMetas !== 'mensal'}">Mês Vigente</button>
+                            <button @click="visaoMetas = 'anual'" class="px-5 py-2.5 rounded-lg text-sm transition-all" :class="{'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600': visaoMetas === 'anual', 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200': visaoMetas !== 'anual'}">Acumulado Anual</button>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden transition-colors" :class="totalProducao > limiteProducao ? 'border-red-300 dark:border-red-900 shadow-red-100/50' : ''">
-                            <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] -z-0 transition-colors" :class="totalProducao > limiteProducao ? 'bg-red-50 dark:bg-red-900/10' : 'bg-emerald-50 dark:bg-emerald-900/10'"></div>
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden transition-colors" :class="{ 'border-red-300 dark:border-red-900 shadow-red-100/50': totalProducao > limiteProducao }">
+                            <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] -z-0 transition-colors" :class="{'bg-red-50 dark:bg-red-900/10': totalProducao > limiteProducao, 'bg-emerald-50 dark:bg-emerald-900/10': totalProducao <= limiteProducao}"></div>
                             <div class="relative z-10">
                                 <div class="flex items-center justify-between mb-4">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" :class="totalProducao > limiteProducao ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" :class="{'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400': totalProducao > limiteProducao, 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400': totalProducao <= limiteProducao}">
                                             <i class="ph-fill ph-factory text-xl"></i>
                                         </div>
-                                        <h3 class="font-bold text-sm uppercase tracking-wider transition-colors" :class="totalProducao > limiteProducao ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">Desvios Produção</h3>
+                                        <h3 class="font-bold text-sm uppercase tracking-wider transition-colors" :class="{'text-red-600 dark:text-red-400': totalProducao > limiteProducao, 'text-emerald-600 dark:text-emerald-400': totalProducao <= limiteProducao}">Desvios Produção</h3>
                                     </div>
                                 </div>
                                 <div class="flex items-end gap-3 mb-6">
-                                    <span class="text-5xl font-black transition-colors" :class="totalProducao > limiteProducao ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">{{ totalProducao }}</span>
+                                    <span class="text-5xl font-black transition-colors" :class="{'text-red-600 dark:text-red-400': totalProducao > limiteProducao, 'text-emerald-600 dark:text-emerald-400': totalProducao <= limiteProducao}">{{ totalProducao }}</span>
                                     <span class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-1 border-l-2 border-slate-200 dark:border-slate-700 pl-3">Meta: <span class="text-slate-700 dark:text-slate-200 font-bold">{{ limiteProducao }}</span></span>
                                 </div>
                                 <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden shadow-inner">
-                                    <div class="h-full rounded-full transition-all duration-1000 ease-out" :class="totalProducao > limiteProducao ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-emerald-400 to-emerald-600'" :style="{ width: Math.min(percentualProducao, 100) + '%' }"></div>
+                                    <div class="h-full rounded-full transition-all duration-1000 ease-out" :class="{'bg-gradient-to-r from-red-400 to-red-600': totalProducao > limiteProducao, 'bg-gradient-to-r from-emerald-400 to-emerald-600': totalProducao <= limiteProducao}" :style="{ width: Math.min(percentualProducao, 100) + '%' }"></div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden transition-colors" :class="totalEstoque > limiteEstoque ? 'border-red-300 dark:border-red-900 shadow-red-100/50' : ''">
-                            <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] -z-0 transition-colors" :class="totalEstoque > limiteEstoque ? 'bg-red-50 dark:bg-red-900/10' : 'bg-emerald-50 dark:bg-emerald-900/10'"></div>
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden transition-colors" :class="{ 'border-red-300 dark:border-red-900 shadow-red-100/50': totalEstoque > limiteEstoque }">
+                            <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] -z-0 transition-colors" :class="{'bg-red-50 dark:bg-red-900/10': totalEstoque > limiteEstoque, 'bg-emerald-50 dark:bg-emerald-900/10': totalEstoque <= limiteEstoque}"></div>
                             <div class="relative z-10">
                                 <div class="flex items-center justify-between mb-4">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" :class="totalEstoque > limiteEstoque ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" :class="{'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400': totalEstoque > limiteEstoque, 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400': totalEstoque <= limiteEstoque}">
                                             <i class="ph-fill ph-package text-xl"></i>
                                         </div>
-                                        <h3 class="font-bold text-sm uppercase tracking-wider transition-colors" :class="totalEstoque > limiteEstoque ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">Desvios Estoque</h3>
+                                        <h3 class="font-bold text-sm uppercase tracking-wider transition-colors" :class="{'text-red-600 dark:text-red-400': totalEstoque > limiteEstoque, 'text-emerald-600 dark:text-emerald-400': totalEstoque <= limiteEstoque}">Desvios Estoque</h3>
                                     </div>
                                 </div>
                                 <div class="flex items-end gap-3 mb-6">
-                                    <span class="text-5xl font-black transition-colors" :class="totalEstoque > limiteEstoque ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">{{ totalEstoque }}</span>
+                                    <span class="text-5xl font-black transition-colors" :class="{'text-red-600 dark:text-red-400': totalEstoque > limiteEstoque, 'text-emerald-600 dark:text-emerald-400': totalEstoque <= limiteEstoque}">{{ totalEstoque }}</span>
                                     <span class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-1 border-l-2 border-slate-200 dark:border-slate-700 pl-3">Meta: <span class="text-slate-700 dark:text-slate-200 font-bold">{{ limiteEstoque }}</span></span>
                                 </div>
                                 <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden shadow-inner">
-                                    <div class="h-full rounded-full transition-all duration-1000 ease-out" :class="totalEstoque > limiteEstoque ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-emerald-400 to-emerald-600'" :style="{ width: Math.min(percentualEstoque, 100) + '%' }"></div>
+                                    <div class="h-full rounded-full transition-all duration-1000 ease-out" :class="{'bg-gradient-to-r from-red-400 to-red-600': totalEstoque > limiteEstoque, 'bg-gradient-to-r from-emerald-400 to-emerald-600': totalEstoque <= limiteEstoque}" :style="{ width: Math.min(percentualEstoque, 100) + '%' }"></div>
                                 </div>
                             </div>
                         </div>
@@ -277,8 +280,8 @@
                     <div class="mb-8"><h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Base de Conhecimento</h2></div>
                     <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
                         <div class="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 p-2 gap-2">
-                            <button @click="abaHistorico = 'Produção'" :class="abaHistorico === 'Produção' ? 'bg-white shadow-sm text-rose-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600' : 'text-slate-500 border-transparent'" class="flex-1 py-3 rounded-xl border font-bold">Produção</button>
-                            <button @click="abaHistorico = 'Estoque'" :class="abaHistorico === 'Estoque' ? 'bg-white shadow-sm text-cyan-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600' : 'text-slate-500 border-transparent'" class="flex-1 py-3 rounded-xl border font-bold">Estoque</button>
+                            <button @click="abaHistorico = 'Produção'" class="flex-1 py-3 rounded-xl border font-bold" :class="{'bg-white shadow-sm text-rose-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600': abaHistorico === 'Produção', 'text-slate-500 border-transparent': abaHistorico !== 'Produção'}">Produção</button>
+                            <button @click="abaHistorico = 'Estoque'" class="flex-1 py-3 rounded-xl border font-bold" :class="{'bg-white shadow-sm text-cyan-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600': abaHistorico === 'Estoque', 'text-slate-500 border-transparent': abaHistorico !== 'Estoque'}">Estoque</button>
                         </div>
                         <div class="overflow-x-auto p-4">
                             <table class="w-full text-left border-collapse min-w-[700px]">
@@ -288,7 +291,7 @@
                                 <tbody class="text-sm divide-y divide-slate-100 dark:divide-slate-700">
                                     <tr v-for="reg in historicoFiltrado" :key="reg.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                                         <td class="px-6 py-4 font-bold text-slate-700 dark:text-slate-200">{{ reg.dataHoraFormatada.split(' ')[0] }} <span class="text-xs text-slate-400 font-medium ml-1">{{ reg.dataHoraFormatada.split(' ')[1] }}</span></td>
-                                        <td class="px-6 py-4"><span class="w-2 h-2 inline-block rounded-full mr-2" :class="abaHistorico === 'Produção' ? 'bg-rose-500' : 'bg-cyan-500'"></span><span class="font-semibold">{{ reg.causa }}</span></td>
+                                        <td class="px-6 py-4"><span class="w-2 h-2 inline-block rounded-full mr-2" :class="{'bg-rose-500': abaHistorico === 'Produção', 'bg-cyan-500': abaHistorico === 'Estoque'}"></span><span class="font-semibold">{{ reg.causa }}</span></td>
                                         <td class="px-6 py-4 font-medium">{{ reg.responsavel }}</td>
                                         <td class="px-6 py-4 text-center">
                                             <button @click="abrirEdicao(reg)" class="text-slate-400 hover:text-indigo-500 p-2 rounded-lg" title="Editar"><i class="ph-fill ph-pencil-simple text-xl"></i></button>
@@ -302,7 +305,7 @@
                 </div>
 
                 <div v-else-if="currentTab === 'configuracoes'" key="configuracoes" class="max-w-6xl mx-auto pb-10">
-                    <div class="mb-8"><h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Painel de Controle</h2><p class="text-slate-500 dark:text-slate-400 mt-1">Configurações globais e listas aplicáveis a <span class="font-bold">{{ usuarioLogado.fabricaAtual }}</span>.</p></div>
+                    <div class="mb-8"><h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Painel de Controle</h2><p class="text-slate-500 dark:text-slate-400 mt-1">Configurações aplicáveis a <span class="font-bold">{{ usuarioLogado.fabricaAtual }}</span>.</p></div>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col transition-colors">
                             <div class="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
