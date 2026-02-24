@@ -385,6 +385,37 @@ createApp({
                 return `${nomesMeses[mesNum]}/${anoCurto}`;
             });
 
+            // -------------------------------------------------------------
+            // PLUGIN CUSTOMIZADO: Escreve "PROD" e "EST" embaixo das barras
+            // -------------------------------------------------------------
+            const pluginTitulosEmbaixoDasBarras = {
+                id: 'titulosEmbaixoDasBarras',
+                afterDatasetsDraw(chart) {
+                    const { ctx, scales: { x, y } } = chart;
+                    ctx.save();
+                    
+                    // Configuração da fonte
+                    ctx.font = 'bold 10px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+                    ctx.fillStyle = isDarkMode.value ? '#cbd5e1' : '#64748b';
+                    
+                    chart.data.datasets.forEach((dataset, i) => {
+                        const meta = chart.getDatasetMeta(i);
+                        if (!meta.hidden) {
+                            meta.data.forEach((bar) => {
+                                // Define se é Produção ou Estoque
+                                const label = dataset.label === 'Produção' ? 'PROD' : 'EST';
+                                
+                                // Escreve o texto exatamente no centro X da barra e um pouco abaixo da linha do eixo X
+                                ctx.fillText(label, bar.x, y.bottom + 6); 
+                            });
+                        }
+                    });
+                    ctx.restore();
+                }
+            };
+
             chartInstance.value = new Chart(ctx, { 
                 type: 'bar', 
                 data: { 
@@ -408,13 +439,24 @@ createApp({
                     responsive: true, 
                     maintainAspectRatio: false, 
                     scales: { 
-                        x: { ticks: { color: tc }, grid: { color: gc, drawBorder: false } }, 
-                        y: { ticks: { color: tc }, grid: { color: gc, drawBorder: false } } 
+                        x: { 
+                            ticks: { 
+                                color: tc, 
+                                font: { weight: 'bold' },
+                                padding: 22 // Cria o espaço necessário entre a linha do gráfico e o mês para os nomes caberem
+                            }, 
+                            grid: { color: gc, drawBorder: false } 
+                        }, 
+                        y: { 
+                            ticks: { color: tc }, 
+                            grid: { color: gc, drawBorder: false } 
+                        } 
                     }, 
                     plugins: { 
                         legend: { labels: { color: tc } } 
                     } 
-                } 
+                },
+                plugins: [pluginTitulosEmbaixoDasBarras] // Ativa o plugin no gráfico
             });
         };
 
