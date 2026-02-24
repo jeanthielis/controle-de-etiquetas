@@ -140,7 +140,7 @@
                 </button>
             </div>
 
-            <div class="p-6 m-4 mt-0 bg-slate-800/40 rounded-2xl border border-slate-700/50 flex items-center justify-between">
+            <div class="p-6 m-4 mt-0 bg-slate-800/40 rounded-2xl border border-slate-700/50 flex flex-col gap-3">
                 <div class="flex items-center gap-3 overflow-hidden">
                     <div class="w-10 h-10 rounded-full bg-indigo-900/50 flex items-center justify-center border border-indigo-500/30 text-indigo-300 shrink-0">
                         <i class="ph-fill ph-user text-xl"></i>
@@ -153,9 +153,14 @@
                         </p>
                     </div>
                 </div>
-                <button @click="fazerLogout" class="text-slate-500 hover:text-rose-500 bg-slate-900 hover:bg-rose-900/30 p-2 rounded-lg transition-all" title="Sair do Sistema">
-                    <i class="ph-bold ph-sign-out text-lg"></i>
-                </button>
+                <div class="flex gap-2 w-full pt-3 border-t border-slate-700/50">
+                    <button @click="abrirModalSenha" class="flex-1 flex justify-center text-slate-400 hover:text-indigo-400 bg-slate-900/50 hover:bg-indigo-900/30 p-2 rounded-lg transition-all border border-transparent hover:border-indigo-500/30" title="Alterar Minha Senha">
+                        <i class="ph-bold ph-key text-lg"></i>
+                    </button>
+                    <button @click="fazerLogout" class="flex-1 flex justify-center text-slate-400 hover:text-rose-400 bg-slate-900/50 hover:bg-rose-900/30 p-2 rounded-lg transition-all border border-transparent hover:border-rose-500/30" title="Sair do Sistema">
+                        <i class="ph-bold ph-sign-out text-lg"></i>
+                    </button>
+                </div>
             </div>
         </aside>
 
@@ -429,6 +434,33 @@
                         <span class="block text-xs font-bold text-slate-500 uppercase">Total Histórico (Fábrica Atual)</span>
                         <span class="text-4xl font-black text-slate-700 dark:text-slate-200 mt-2 block">{{ modalRaioX.total }}</span>
                     </div>
+                </div>
+            </div>
+
+            <div v-if="modalSenha.aberto" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-700 relative">
+                    <button @click="modalSenha.aberto = false" class="absolute top-6 right-6 text-slate-400 hover:text-rose-500 transition-colors"><i class="ph-bold ph-x text-2xl"></i></button>
+                    <h3 class="text-2xl font-bold text-slate-800 dark:text-white mb-2 text-center">Alterar Senha</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 text-center mb-6">Mantenha o seu acesso seguro.</p>
+                    
+                    <form @submit.prevent="alterarSenha" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Nova Senha</label>
+                            <input type="password" v-model="modalSenha.novaSenha" class="input-modern" required placeholder="••••••••" minlength="6">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Confirmar Nova Senha</label>
+                            <input type="password" v-model="modalSenha.confirmarSenha" class="input-modern" required placeholder="••••••••">
+                        </div>
+                        
+                        <div v-if="modalSenha.mensagem" :class="modalSenha.erro ? 'text-rose-600 bg-rose-50 border-rose-200 dark:bg-rose-900/30 dark:border-rose-800' : 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800'" class="p-3 text-sm font-bold rounded-xl border text-center transition-colors">
+                            {{ modalSenha.mensagem }}
+                        </div>
+                        
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg hover:-translate-y-0.5 mt-2">
+                            Atualizar Minha Senha
+                        </button>
+                    </form>
                 </div>
             </div>
 
