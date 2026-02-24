@@ -36,10 +36,7 @@ createApp({
         const listaResponsaveis = ref([]); 
 
         const filtros = reactive({ causa: '', responsavel: '' });
-        const form = reactive({ 
-            local: '', causa: '', responsavel: '', 
-            quantidade: 1, dataOcorrencia: gerarDataAtualInput(), contabilizar: true 
-        });
+        const form = reactive({ local: '', causa: '', responsavel: '', quantidade: 1, dataOcorrencia: gerarDataAtualInput(), contabilizar: true });
         
         const registrosGerais = ref([]);
         const registros = computed(() => {
@@ -47,34 +44,25 @@ createApp({
             return registrosGerais.value.filter(r => r.fabrica === usuarioLogado.value.fabricaAtual);
         });
 
-        // FILTRO PARA DROPDOWNS (Exibe apenas os colaboradores da Fábrica Selecionada no Menu)
+        // PROTEÇÃO AQUI: (c.fabricas || []) garante que não vai quebrar se não tiver fábrica atrelada
         const colaboradoresFiltrados = computed(() => {
             if (!usuarioLogado.value || !listaResponsaveis.value) return [];
             return listaResponsaveis.value
-                .filter(c => c.fabricas && c.fabricas.includes(usuarioLogado.value.fabricaAtual))
+                .filter(c => (c.fabricas || []).includes(usuarioLogado.value.fabricaAtual))
                 .map(c => c.nome);
         });
 
-        // FILTRO PARA PAINEL DE CONTROLE (Exibe os colaboradores permitidos pelo Nível de Acesso)
         const responsaveisDoUsuario = computed(() => {
             if (!usuarioLogado.value || !listaResponsaveis.value) return [];
-            
-            // Coordenador vê todos (pois tem acesso a todas as fábricas atreladas a ele)
             if (usuarioLogado.value.nivelAcesso === 'Coordenador') {
                 return listaResponsaveis.value;
             }
-            
-            // Supervisores veem apenas os que operam nas fábricas deles
             return listaResponsaveis.value.filter(colab => 
-                colab.fabricas && colab.fabricas.some(f => usuarioLogado.value.fabricas.includes(f))
+                (colab.fabricas || []).some(f => (usuarioLogado.value.fabricas || []).includes(f))
             );
         });
 
-        const modalEdicao = reactive({ 
-            aberto: false, id: null, local: '', causa: '', 
-            responsavel: '', quantidade: 1, dataOcorrencia: '', contabilizar: true 
-        });
-        
+        const modalEdicao = reactive({ aberto: false, id: null, local: '', causa: '', responsavel: '', quantidade: 1, dataOcorrencia: '', contabilizar: true });
         const modalRaioX = reactive({ aberto: false, nome: '', total: 0, causaFrequente: '', ultimos: [] });
         const modalSenha = reactive({ aberto: false, novaSenha: '', confirmarSenha: '', mensagem: '', erro: false });
 
@@ -123,14 +111,20 @@ createApp({
                 const dadosMapeados = [];
                 snapshot.forEach((docSnap) => {
                     const dado = docSnap.data();
-                    let timestampRaw = dado.timestamp || null;
-                    let tempoMilisegundos = timestampRaw ? timestampRaw.toDate().getTime() : 0;
-                    let dataFormatada = timestampRaw ? `${timestampRaw.toDate().getDate().toString().padStart(2, '0')}/${(timestampRaw.toDate().getMonth()+1).toString().padStart(2, '0')} ${timestampRaw.toDate().getHours().toString().padStart(2, '0')}:${timestampRaw.toDate().getMinutes().toString().padStart(2, '0')}` : '';
+                    
+                    // PROTEÇÃO AQUI: Garante que as datas sejam lidas com segurança
+                    let d = null;
+                    if (dado.timestamp) {
+                        d = dado.timestamp.toDate ? dado.timestamp.toDate() : new Date(dado.timestamp);
+                    }
+                    
+                    let tempoMilisegundos = d ? d.getTime() : 0;
+                    let dataFormatada = d ? `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}` : '';
 
                     dadosMapeados.push({ 
                         id: docSnap.id, local: dado.local, causa: dado.causa, 
-                        responsavel: dado.responsavel, quantidade: dado.quantidade || 1, 
-                        dataHoraFormatada: dataFormatada, timestampRaw: timestampRaw, 
+                        responsavel: dado.responsavel, quantidade: Number(dado.quantidade || 1), 
+                        dataHoraFormatada: dataFormatada, dataObj: d, // Objeto de Data Segura
                         ordenacaoTempo: tempoMilisegundos, contabilizar: dado.contabilizar !== false, 
                         fabrica: dado.fabrica || 'Fábrica 1' 
                     });
@@ -155,25 +149,13 @@ createApp({
         
         const adicionarColaborador = () => { 
             if(formColaborador.nome.trim() && formColaborador.fabricas.length > 0){ 
-                listaResponsaveis.value.push({
-                    nome: formColaborador.nome.trim(),
-                    fabricas: [...formColaborador.fabricas]
-                }); 
-                formColaborador.nome = ''; 
-                formColaborador.fabricas = [];
-                salvarConfiguracoes(); 
-            } else {
-                alert("Preencha o nome e marque pelo menos uma fábrica.");
-            }
+                listaResponsaveis.value.push({ nome: formColaborador.nome.trim(), fabricas: [...formColaborador.fabricas] }); 
+                formColaborador.nome = ''; formColaborador.fabricas = []; salvarConfiguracoes(); 
+            } else { alert("Preencha o nome e marque pelo menos uma fábrica."); }
         };
-        
-        // Remove pelo nome exato, para funcionar de forma limpa independente do filtro da tela
         const removerColaborador = (nomeColaborador) => { 
             const index = listaResponsaveis.value.findIndex(c => c.nome === nomeColaborador);
-            if (index !== -1) {
-                listaResponsaveis.value.splice(index, 1); 
-                salvarConfiguracoes(); 
-            }
+            if (index !== -1) { listaResponsaveis.value.splice(index, 1); salvarConfiguracoes(); }
         };
 
         const mudarAba = (aba) => { currentTab.value = aba; menuMobileAberto.value = false; };
@@ -190,7 +172,7 @@ createApp({
             try {
                 await addDoc(collection(db, "registros"), {
                     local: form.local, causa: form.causa, responsavel: form.responsavel, 
-                    quantidade: form.quantidade, timestamp: new Date(form.dataOcorrencia), 
+                    quantidade: Number(form.quantidade), timestamp: new Date(form.dataOcorrencia), 
                     contabilizar: form.contabilizar, fabrica: usuarioLogado.value.fabricaAtual
                 });
                 form.local = ''; form.causa = ''; form.responsavel = ''; form.quantidade = 1; form.dataOcorrencia = gerarDataAtualInput(); form.contabilizar = true; 
@@ -199,25 +181,23 @@ createApp({
         };
 
         const deletarRegistro = async (id) => { if(confirm("Excluir?")) { await deleteDoc(doc(db, "registros", id)); } };
-        
         const abrirEdicao = (reg) => { 
             modalEdicao.id = reg.id; modalEdicao.local = reg.local; modalEdicao.causa = reg.causa; 
             modalEdicao.responsavel = reg.responsavel; modalEdicao.quantidade = reg.quantidade; modalEdicao.contabilizar = reg.contabilizar;
-            // Se o timestamp for string limpa pra formato de input
-            if(reg.timestampRaw) {
-                const d = reg.timestampRaw.toDate(); const offset = d.getTimezoneOffset() * 60000;
-                modalEdicao.dataOcorrencia = new Date(d.getTime() - offset).toISOString().slice(0, 16);
+            if(reg.dataObj) {
+                const offset = reg.dataObj.getTimezoneOffset() * 60000;
+                modalEdicao.dataOcorrencia = new Date(reg.dataObj.getTime() - offset).toISOString().slice(0, 16);
             }
             modalEdicao.aberto = true; 
         };
         const salvarEdicao = async () => { 
             await updateDoc(doc(db, "registros", modalEdicao.id), { 
                 local: modalEdicao.local, causa: modalEdicao.causa, responsavel: modalEdicao.responsavel, 
-                quantidade: modalEdicao.quantidade, contabilizar: modalEdicao.contabilizar, timestamp: new Date(modalEdicao.dataOcorrencia)
+                quantidade: Number(modalEdicao.quantidade), contabilizar: modalEdicao.contabilizar, timestamp: new Date(modalEdicao.dataOcorrencia)
             }); 
             modalEdicao.aberto = false; 
         };
-        
+
         const abrirRaioX = (nomeColaborador) => {
             modalRaioX.nome = nomeColaborador;
             const regsColab = registros.value.filter(r => r.responsavel === nomeColaborador);
@@ -225,15 +205,25 @@ createApp({
             modalRaioX.aberto = true;
         };
 
+        // GESTÃO DE CONSEQUÊNCIAS BLINDADA
         const statusEquipe = computed(() => {
             const dataLimite = new Date(); dataLimite.setDate(dataLimite.getDate() - 60);
             return colaboradoresFiltrados.value.map(nomeResp => {
-                const registrosRecentes = registros.value.filter(r => r.contabilizar !== false && r.timestampRaw && r.responsavel === nomeResp && r.timestampRaw.toDate() >= dataLimite);
+                const registrosRecentes = registros.value.filter(r => 
+                    r.contabilizar !== false && r.dataObj && r.responsavel === nomeResp && r.dataObj >= dataLimite
+                );
+                
                 let total = 0; let erroDeVez = false;
-                registrosRecentes.forEach(r => { total += (r.quantidade || 1); if ((r.quantidade || 1) >= 3) erroDeVez = true; });
+                registrosRecentes.forEach(r => { 
+                    const qtd = Number(r.quantidade || 1);
+                    total += qtd; 
+                    if (qtd >= 3) erroDeVez = true; 
+                });
+                
                 let status = "Sem advertência"; let cor = "text-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800";
                 if (erroDeVez || total >= 3) { status = "Advertência Escrita"; cor = "text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-300 dark:border-rose-800"; } 
                 else if (total === 2) { status = "Advertência Verbal"; cor = "text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-800"; }
+                
                 return { nome: nomeResp, total, status, cor };
             }).sort((a, b) => b.total - a.total);
         });
@@ -241,7 +231,7 @@ createApp({
         const destaquesEquipe = computed(() => {
             const dataLimite = new Date(); dataLimite.setDate(dataLimite.getDate() - 60);
             return colaboradoresFiltrados.value.filter(nomeResp => {
-                return !registros.value.some(r => r.contabilizar !== false && r.timestampRaw && r.responsavel === nomeResp && r.timestampRaw.toDate() >= dataLimite);
+                return !registros.value.some(r => r.contabilizar !== false && r.dataObj && r.responsavel === nomeResp && r.dataObj >= dataLimite);
             });
         });
 
@@ -259,8 +249,8 @@ createApp({
             if (chartInstance.value) chartInstance.value.destroy();
             const agrupamentoPorMes = {};
             [...registros.value].reverse().forEach(reg => {
-                if(!reg.timestampRaw) return;
-                const d = reg.timestampRaw.toDate(); const mesAno = `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+                if(!reg.dataObj) return;
+                const d = reg.dataObj; const mesAno = `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
                 if (!agrupamentoPorMes[mesAno]) agrupamentoPorMes[mesAno] = { producao: 0, estoque: 0 };
                 if (reg.local === 'Produção') agrupamentoPorMes[mesAno].producao += (reg.quantidade || 1); else if (reg.local === 'Estoque') agrupamentoPorMes[mesAno].estoque += (reg.quantidade || 1);
             });
