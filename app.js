@@ -1,8 +1,8 @@
 import { createApp, ref, reactive, computed, watch, nextTick, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
 import { db } from './firebase-config.js'; 
-// IMPORTANTE: Adicionado setDoc para salvar as configurações
 import { collection, addDoc, onSnapshot, query, updateDoc, deleteDoc, doc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+// Função auxiliar para gerar a Data Local Atual no formato do input 'datetime-local'
 const gerarDataAtualInput = () => {
     const agora = new Date();
     const offset = agora.getTimezoneOffset() * 60000;
@@ -14,12 +14,12 @@ createApp({
         const currentTab = ref('dashboard');
         const menuMobileAberto = ref(false);
         const mensagemSucesso = ref(false);
-        const visaoMetas = ref('mensal'); 
+        const visaoMetas = ref('mensal'); // 'mensal' ou 'anual'
         const abaHistorico = ref('Produção');
         const carregando = ref(true);
         const chartInstance = ref(null);
 
-        // Dark Mode: Mantido no localStorage propositalmente (é uma preferência de tela do dispositivo do usuário, não da empresa)
+        // Dark Mode
         const isDarkMode = ref(localStorage.getItem('qc_theme') === 'dark');
         const toggleTheme = () => {
             isDarkMode.value = !isDarkMode.value;
@@ -29,7 +29,7 @@ createApp({
         };
         const aplicarTema = () => document.documentElement.classList.toggle('dark', isDarkMode.value);
 
-        // Variáveis de Configuração (agora vazias por padrão, serão preenchidas pelo Firebase)
+        // Variáveis de Configuração (agora preenchidas pelo Firebase)
         const regraAtiva = ref(true);
         const metas = reactive({ producaoMensal: 0, producaoAnual: 0, estoqueMensal: 0, estoqueAnual: 0 });
         const listaCausas = ref([]);
@@ -37,25 +37,26 @@ createApp({
 
         // Formulários e Filtros
         const filtros = reactive({ causa: '', responsavel: '' });
-        const form = reactive({ local: '', causa: '', responsavel: '', quantidade: 1, dataOcorrencia: gerarDataAtualInput() });
+        const form = reactive({ local: '', causa: '', responsavel: '', quantidade: 1, dataOcorrencia: gerarDataAtualInput(), contabilizar: true });
         const registros = ref([]);
-        const modalEdicao = reactive({ aberto: false, id: null, local: '', causa: '', responsavel: '', quantidade: 1, dataOcorrencia: '' });
+
+        // Modal de Edição
+        const modalEdicao = reactive({ aberto: false, id: null, local: '', causa: '', responsavel: '', quantidade: 1, dataOcorrencia: '', contabilizar: true });
 
         const novaCausa = ref('');
         const novoColaborador = ref('');
 
         // =========================================================================
-        // FUNÇÃO DE SALVAMENTO NO FIREBASE (Substitui o LocalStorage)
+        // FUNÇÃO DE SALVAMENTO NO FIREBASE (Configurações Gerais)
         // =========================================================================
         const salvarConfiguracoes = async () => {
             try {
-                // Salva todos os parâmetros no documento 'geral' da coleção 'configuracoes'
                 await setDoc(doc(db, "configuracoes", "geral"), {
                     regraAtiva: regraAtiva.value,
                     metas: { ...metas },
                     causas: listaCausas.value,
                     responsaveis: listaResponsaveis.value
-                }, { merge: true }); // Merge true evita apagar outros dados acidentalmente
+                }, { merge: true });
                 
                 if (currentTab.value === 'dashboard') setTimeout(() => renderizarGraficoEvolucao(), 50);
             } catch (e) {
@@ -99,7 +100,6 @@ createApp({
                     if (data.causas) listaCausas.value = data.causas;
                     if (data.responsaveis) listaResponsaveis.value = data.responsaveis;
                 } else {
-                    // Se o documento não existir (primeira vez abrindo o app no Firebase), cria ele
                     salvarConfiguracoes();
                 }
             });
@@ -129,7 +129,8 @@ createApp({
                         quantidade: dado.quantidade || 1, 
                         dataHoraFormatada: dataFormatada, 
                         timestampRaw: timestampRaw,
-                        ordenacaoTempo: tempoMilisegundos
+                        ordenacaoTempo: tempoMilisegundos,
+                        contabilizar: dado.contabilizar !== false // Se não existir (antigos), assume true
                     });
                 });
 
@@ -142,7 +143,7 @@ createApp({
         });
 
         // =========================================================================
-        // LÓGICA EXISTENTE DO APP (Sem alterações abaixo)
+        // NAVEGAÇÃO E LANÇAMENTOS
         // =========================================================================
         const mudarAba = (aba) => { currentTab.value = aba; menuMobileAberto.value = false; };
         const limparFiltros = () => { filtros.causa = ''; filtros.responsavel = ''; };
@@ -155,11 +156,13 @@ createApp({
                     causa: form.causa, 
                     responsavel: form.responsavel, 
                     quantidade: form.quantidade, 
-                    timestamp: dataRegistro 
+                    timestamp: dataRegistro,
+                    contabilizar: form.contabilizar // Salva se deve gerar advertência
                 });
                 
                 form.local = ''; form.causa = ''; form.responsavel = ''; form.quantidade = 1; 
                 form.dataOcorrencia = gerarDataAtualInput(); 
+                form.contabilizar = true; // Reseta o checkbox para o próximo lançamento
                 
                 mensagemSucesso.value = true;
                 setTimeout(() => { mensagemSucesso.value = false; }, 2000);
@@ -176,6 +179,7 @@ createApp({
             modalEdicao.causa = reg.causa;
             modalEdicao.responsavel = reg.responsavel; 
             modalEdicao.quantidade = reg.quantidade;
+            modalEdicao.contabilizar = reg.contabilizar; // Carrega o status do checkbox
             
             if(reg.timestampRaw) {
                 const d = reg.timestampRaw.toDate();
@@ -194,12 +198,16 @@ createApp({
                     causa: modalEdicao.causa, 
                     responsavel: modalEdicao.responsavel,
                     quantidade: modalEdicao.quantidade, 
-                    timestamp: new Date(modalEdicao.dataOcorrencia)
+                    timestamp: new Date(modalEdicao.dataOcorrencia),
+                    contabilizar: modalEdicao.contabilizar // Atualiza o status
                 });
                 modalEdicao.aberto = false;
             } catch (e) { console.error("Erro ao editar: ", e); }
         };
 
+        // =========================================================================
+        // INTELIGÊNCIA E GRÁFICOS
+        // =========================================================================
         const statusEquipe = computed(() => {
             const dataLimite = new Date();
             dataLimite.setDate(dataLimite.getDate() - 60);
@@ -207,6 +215,9 @@ createApp({
             return listaResponsaveis.value.map(resp => {
                 const registrosRecentes = registros.value.filter(r => {
                     if (!r.timestampRaw) return false;
+                    // Se o lançamento foi desmarcado no Checkbox, ele NÃO conta para a Gestão
+                    if (r.contabilizar === false) return false;
+                    
                     return r.responsavel === resp && r.timestampRaw.toDate() >= dataLimite;
                 });
 
