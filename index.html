@@ -55,11 +55,9 @@
                     <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Senha</label>
                     <input type="password" v-model="loginForm.senha" class="input-modern" required placeholder="••••••••">
                 </div>
-                
                 <div v-if="erroLogin" class="p-3 bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-600 dark:text-rose-400 text-sm font-bold text-center flex items-center justify-center gap-2">
                     <i class="ph-fill ph-warning-circle text-lg"></i> {{ erroLogin }}
                 </div>
-                
                 <button type="submit" :disabled="carregando" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-indigo-600/20 hover:-translate-y-1 flex justify-center items-center gap-2">
                     <span v-if="!carregando">Acessar Sistema</span>
                     <i v-else class="ph-bold ph-spinner animate-spin text-xl"></i>
@@ -97,7 +95,6 @@
                 <button @click="mudarAba('dashboard')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="currentTab === 'dashboard' ? 'bg-indigo-600/10 text-indigo-400 border-indigo-500' : 'border-transparent hover:bg-slate-800/50 hover:text-white'">
                     <i class="text-2xl" :class="currentTab === 'dashboard' ? 'ph-fill ph-chart-pie-slice' : 'ph ph-chart-pie-slice'"></i> Visão Analítica
                 </button>
-                
                 <button @click="mudarAba('lancamento')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="currentTab === 'lancamento' ? 'bg-indigo-600/10 text-indigo-400 border-indigo-500' : 'border-transparent hover:bg-slate-800/50 hover:text-white'">
                     <i class="text-2xl" :class="currentTab === 'lancamento' ? 'ph-fill ph-plus-circle' : 'ph ph-plus-circle'"></i> Registrar Apontamento
                 </button>
@@ -106,11 +103,9 @@
                     <button @click="mudarAba('consequencias')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="currentTab === 'consequencias' ? 'bg-indigo-600/10 text-indigo-400 border-indigo-500' : 'border-transparent hover:bg-slate-800/50 hover:text-white'">
                         <i class="text-2xl" :class="currentTab === 'consequencias' ? 'ph-fill ph-gavel' : 'ph ph-gavel'"></i> Gestão de Consequências
                     </button>
-                    
                     <button @click="mudarAba('historico')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="currentTab === 'historico' ? 'bg-indigo-600/10 text-indigo-400 border-indigo-500' : 'border-transparent hover:bg-slate-800/50 hover:text-white'">
                         <i class="text-2xl" :class="currentTab === 'historico' ? 'ph-fill ph-clock-counter-clockwise' : 'ph ph-clock-counter-clockwise'"></i> Histórico e Filtros
                     </button>
-                    
                     <button @click="mudarAba('configuracoes')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium" :class="currentTab === 'configuracoes' ? 'bg-indigo-600/10 text-indigo-400 border-indigo-500' : 'border-transparent hover:bg-slate-800/50 hover:text-white'">
                         <i class="text-2xl" :class="currentTab === 'configuracoes' ? 'ph-fill ph-sliders-horizontal' : 'ph ph-sliders-horizontal'"></i> Painel de Controle
                     </button>
@@ -126,7 +121,7 @@
             <div class="px-6 mb-4" v-if="usuarioLogado.fabricas && usuarioLogado.fabricas.length > 1">
                 <label class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-2 block">Unidade de Lançamento</label>
                 <div class="relative">
-                    <select v-model="usuarioLogado.fabricaAtual" @change="salvarSessao" class="w-full bg-slate-800/50 border border-slate-700/50 text-white font-bold text-sm rounded-xl px-4 py-3 outline-none focus:border-indigo-50 appearance-none">
+                    <select v-model="usuarioLogado.fabricaAtual" @change="salvarSessao" class="w-full bg-slate-800/50 border border-slate-700/50 text-white font-bold text-sm rounded-xl px-4 py-3 outline-none focus:border-indigo-500 appearance-none">
                         <option v-for="fab in usuarioLogado.fabricas" :value="fab">{{ fab }}</option>
                     </select>
                     <i class="ph-bold ph-caret-down absolute right-4 top-3.5 text-slate-400 pointer-events-none"></i>
@@ -180,18 +175,8 @@
                             <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Metas e perdas da <span class="font-bold text-indigo-500">{{ usuarioLogado.fabricaAtual }}</span>.</p>
                         </div>
                         <div class="bg-white dark:bg-slate-800 p-1 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 inline-flex">
-                            <button 
-                                @click="visaoMetas = 'mensal'" 
-                                class="px-5 py-2.5 rounded-lg text-sm transition-all" 
-                                :class="visaoMetas === 'mensal' ? 'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'">
-                                Mês Vigente
-                            </button>
-                            <button 
-                                @click="visaoMetas = 'anual'" 
-                                class="px-5 py-2.5 rounded-lg text-sm transition-all" 
-                                :class="visaoMetas === 'anual' ? 'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'">
-                                Acumulado Anual
-                            </button>
+                            <button @click="visaoMetas = 'mensal'" class="px-5 py-2.5 rounded-lg text-sm transition-all" :class="visaoMetas === 'mensal' ? 'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'">Mês Vigente</button>
+                            <button @click="visaoMetas = 'anual'" class="px-5 py-2.5 rounded-lg text-sm transition-all" :class="visaoMetas === 'anual' ? 'bg-slate-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'">Acumulado Anual</button>
                         </div>
                     </div>
 
@@ -309,7 +294,7 @@
                                 <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Colaborador</label>
                                 <select v-model="form.responsavel" class="input-modern" required>
                                     <option value="" disabled selected>Selecionar...</option>
-                                    <option v-for="resp in colaboradoresDaFabricaAtual" :value="resp">{{ resp }}</option>
+                                    <option v-for="resp in colaboradoresFiltrados" :value="resp">{{ resp }}</option>
                                 </select>
                             </div>
                             <div class="md:col-span-3">
@@ -327,7 +312,7 @@
                         <div class="mb-2 mt-4" v-if="usuarioLogado.nivelAcesso !== 'Técnico'">
                             <label class="flex items-center gap-3 cursor-pointer group w-fit">
                                 <input type="checkbox" v-model="form.contabilizar" class="peer sr-only">
-                                <div class="w-6 h-6 border-2 rounded peer-checked:bg-indigo-50 flex items-center justify-center"><i class="ph-bold ph-check text-indigo-600 opacity-0 peer-checked:opacity-100"></i></div>
+                                <div class="w-6 h-6 border-2 rounded peer-checked:bg-indigo-500 flex items-center justify-center"><i class="ph-bold ph-check text-white opacity-0 peer-checked:opacity-100"></i></div>
                                 <span class="text-sm font-bold text-slate-700 dark:text-slate-300">Contabilizar Advertência</span>
                             </label>
                         </div>
@@ -346,24 +331,28 @@
                     <div class="mb-8"><h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Base de Conhecimento</h2></div>
                     <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
                         <div class="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 p-2 gap-2">
-                            <button 
-                                @click="abaHistorico = 'Produção'" 
-                                class="flex-1 py-3 rounded-xl border font-bold" 
-                                :class="abaHistorico === 'Produção' ? 'bg-white shadow-sm text-rose-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600' : 'text-slate-500 border-transparent'">
-                                Produção
-                            </button>
-                            <button 
-                                @click="abaHistorico = 'Estoque'" 
-                                class="flex-1 py-3 rounded-xl border font-bold" 
-                                :class="abaHistorico === 'Estoque' ? 'bg-white shadow-sm text-cyan-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600' : 'text-slate-500 border-transparent'">
-                                Estoque
-                            </button>
+                            <button @click="abaHistorico = 'Produção'" class="flex-1 py-3 rounded-xl border font-bold" :class="abaHistorico === 'Produção' ? 'bg-white shadow-sm text-rose-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600' : 'text-slate-500 border-transparent'">Produção</button>
+                            <button @click="abaHistorico = 'Estoque'" class="flex-1 py-3 rounded-xl border font-bold" :class="abaHistorico === 'Estoque' ? 'bg-white shadow-sm text-cyan-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600' : 'text-slate-500 border-transparent'">Estoque</button>
                         </div>
                         
                         <div class="p-6 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 flex flex-col md:flex-row gap-4 items-end transition-colors">
-                            <div class="w-full md:w-5/12"><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Causa</label><select v-model="filtros.causa" class="input-modern py-2.5"><option value="">Todas</option><option v-for="c in listaCausas" :value="c">{{ c }}</option></select></div>
-                            <div class="w-full md:w-5/12"><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Colaborador</label><select v-model="filtros.responsavel" class="input-modern py-2.5"><option value="">Todos</option><option v-for="r in colaboradoresDaFabricaAtual" :value="r">{{ r }}</option></select></div>
-                            <div class="w-full md:w-2/12 flex justify-end"><button @click="limparFiltros" v-if="filtros.causa || filtros.responsavel" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold py-2.5 rounded-xl border border-slate-200 dark:border-slate-600">Limpar</button></div>
+                            <div class="w-full md:w-5/12">
+                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Causa</label>
+                                <select v-model="filtros.causa" class="input-modern py-2.5">
+                                    <option value="">Todas</option>
+                                    <option v-for="c in listaCausas" :value="c">{{ c }}</option>
+                                </select>
+                            </div>
+                            <div class="w-full md:w-5/12">
+                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Colaborador</label>
+                                <select v-model="filtros.responsavel" class="input-modern py-2.5">
+                                    <option value="">Todos</option>
+                                    <option v-for="r in colaboradoresFiltrados" :value="r">{{ r }}</option>
+                                </select>
+                            </div>
+                            <div class="w-full md:w-2/12 flex justify-end">
+                                <button @click="limparFiltros" v-if="filtros.causa || filtros.responsavel" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold py-2.5 rounded-xl border border-slate-200 dark:border-slate-600">Limpar</button>
+                            </div>
                         </div>
 
                         <div class="overflow-x-auto p-4">
@@ -393,7 +382,7 @@
                 <div v-else-if="currentTab === 'configuracoes'" key="configuracoes" class="max-w-6xl mx-auto pb-10">
                     <div class="mb-8">
                         <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Painel de Controle</h2>
-                        <p class="text-slate-500 dark:text-slate-400 mt-1">Configurações globais da operação.</p>
+                        <p class="text-slate-500 dark:text-slate-400 mt-1">Configurações aplicáveis a <span class="font-bold">{{ usuarioLogado.fabricaAtual }}</span>.</p>
                     </div>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col transition-colors">
@@ -418,38 +407,30 @@
                                 <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400"><i class="ph-fill ph-users-three text-2xl"></i></div>
                                 <h3 class="font-bold text-slate-800 dark:text-white text-lg">Quadro Operacional</h3>
                             </div>
-                            <form @submit.prevent="adicionarColaborador" class="flex gap-2 mb-6">
-                                <input type="text" v-model="novoColaboradorNome" placeholder="Nome..." class="input-modern w-full" required>
-                                <select v-model="novoColaboradorFabrica" class="input-modern w-40 px-2" required>
-                                    <option value="Fábrica 1">Fábrica 1</option>
-                                    <option value="Fábrica 2">Fábrica 2</option>
-                                </select>
-                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 rounded-xl font-bold"><i class="ph-bold ph-user-plus"></i></button>
+                            <form @submit.prevent="adicionarColaborador" class="flex flex-col gap-4 mb-6">
+                                <div class="flex gap-2">
+                                    <input type="text" v-model="formColaborador.nome" placeholder="Nome do colaborador..." class="input-modern" required>
+                                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 rounded-xl font-bold"><i class="ph-bold ph-user-plus"></i></button>
+                                </div>
+                                <div class="flex gap-4">
+                                    <label v-if="usuarioLogado.fabricas.includes('Fábrica 1')" class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
+                                        <input type="checkbox" v-model="formColaborador.fabricas" value="Fábrica 1" class="rounded text-indigo-600 focus:ring-indigo-500"> Fábrica 1
+                                    </label>
+                                    <label v-if="usuarioLogado.fabricas.includes('Fábrica 2')" class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
+                                        <input type="checkbox" v-model="formColaborador.fabricas" value="Fábrica 2" class="rounded text-rose-600 focus:ring-rose-500"> Fábrica 2
+                                    </label>
+                                </div>
                             </form>
                             <div class="flex-1 overflow-y-auto max-h-[300px] pr-2 space-y-3">
-                                <div v-for="(colab, index) in listaResponsaveis" :key="index" class="flex justify-between items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300">
-                                    <div class="flex items-center gap-2">
-                                        <span>{{ colab.nome }}</span>
-                                        <span class="text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider" :class="colab.fabrica === 'Fábrica 1' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'">{{ colab.fabrica }}</span>
-                                    </div>
-                                    <button @click="removerColaborador(index)" class="text-slate-400 hover:text-rose-500"><i class="ph-fill ph-trash text-lg"></i></button>
+                                <div v-for="colab in responsaveisDoUsuario" :key="colab.nome" class="flex justify-between items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    <span>{{ colab.nome }}</span>
+                                    <button @click="removerColaborador(colab.nome)" class="text-slate-400 hover:text-rose-500"><i class="ph-fill ph-trash text-lg"></i></button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </transition>
-
-            <div v-if="modalRaioX.aberto" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-700 relative">
-                    <button @click="modalRaioX.aberto = false" class="absolute top-6 right-6 text-slate-400 hover:text-rose-500"><i class="ph-bold ph-x text-2xl"></i></button>
-                    <h3 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 text-center">{{ modalRaioX.nome }}</h3>
-                    <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 text-center mb-6">
-                        <span class="block text-xs font-bold text-slate-500 uppercase">Total Histórico (Fábrica Atual)</span>
-                        <span class="text-4xl font-black text-slate-700 dark:text-slate-200 mt-2 block">{{ modalRaioX.total }}</span>
-                    </div>
-                </div>
-            </div>
 
             <div v-if="modalEdicao.aberto" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                 <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-2xl w-full shadow-2xl border border-slate-200 dark:border-slate-700 relative transition-colors">
@@ -476,7 +457,7 @@
                             <div>
                                 <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Colaborador</label>
                                 <select v-model="modalEdicao.responsavel" class="input-modern" required>
-                                    <option v-for="resp in colaboradoresDaFabricaAtual" :value="resp">{{ resp }}</option>
+                                    <option v-for="resp in colaboradoresFiltrados" :value="resp">{{ resp }}</option>
                                 </select>
                             </div>
                             <div>
@@ -487,15 +468,26 @@
                             </div>
                         </div>
                         
-                        <div class="mt-4 mb-2">
+                        <div class="mt-4 mb-2" v-if="usuarioLogado.nivelAcesso !== 'Técnico'">
                             <label class="flex items-center gap-3 cursor-pointer group w-fit">
                                 <input type="checkbox" v-model="modalEdicao.contabilizar" class="peer sr-only">
                                 <div class="w-6 h-6 border-2 rounded peer-checked:bg-indigo-500 flex items-center justify-center"><i class="ph-bold ph-check text-white opacity-0 peer-checked:opacity-100"></i></div>
-                                <span class="text-sm font-bold text-slate-700 dark:text-slate-300">Contabilizar na Gestão de Consequências</span>
+                                <span class="text-sm font-bold text-slate-700 dark:text-slate-300">Contabilizar Advertência</span>
                             </label>
                         </div>
                         <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl mt-4 transition-colors">Atualizar Dados</button>
                     </form>
+                </div>
+            </div>
+
+            <div v-if="modalRaioX.aberto" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-700 relative">
+                    <button @click="modalRaioX.aberto = false" class="absolute top-6 right-6 text-slate-400 hover:text-rose-500"><i class="ph-bold ph-x text-2xl"></i></button>
+                    <h3 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 text-center">{{ modalRaioX.nome }}</h3>
+                    <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 text-center mb-6">
+                        <span class="block text-xs font-bold text-slate-500 uppercase">Total Histórico (Fábrica Atual)</span>
+                        <span class="text-4xl font-black text-slate-700 dark:text-slate-200 mt-2 block">{{ modalRaioX.total }}</span>
+                    </div>
                 </div>
             </div>
 
