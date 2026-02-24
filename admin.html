@@ -10,40 +10,36 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] } } }
-        }
+        tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] } } } }
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; }
         .input-modern { @apply w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 bg-slate-50 dark:bg-slate-900/50 text-slate-700 dark:text-slate-200 outline-none transition-all duration-200 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10; }
+        [v-cloak] { display: none; }
     </style>
 </head>
 <body class="bg-[#f8fafc] dark:bg-[#0f172a] text-slate-800 dark:text-slate-100 transition-colors duration-300">
 
-<div id="admin-app" class="min-h-screen flex">
+<div id="admin-app" class="min-h-screen flex" v-cloak>
     
-    <aside class="w-72 bg-[#080d1a] text-slate-300 flex flex-col shadow-2xl z-50 h-screen border-r border-slate-800">
+    <aside class="w-72 bg-[#080d1a] text-slate-300 flex flex-col shadow-2xl z-50 h-screen border-r border-slate-800 sticky top-0">
         <div class="p-8 text-center border-b border-slate-800/60">
             <div class="flex items-center justify-center gap-3 mb-2">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-rose-600 flex items-center justify-center shadow-lg"><i class="ph-bold ph-shield-check text-white text-xl"></i></div>
                 <h1 class="text-2xl font-extrabold tracking-tight text-white">Admin<span class="text-indigo-400">Track</span></h1>
             </div>
+            <p class="text-xs text-slate-500 uppercase tracking-widest mt-2 font-bold">Controle Central</p>
         </div>
         
         <nav class="flex-1 px-4 py-6 space-y-2">
-            <button @click="currentTab = 'dashboard'" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'dashboard', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'dashboard'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'dashboard' ? 'ph-fill ph-squares-four' : 'ph ph-squares-four'"></i> Visão Geral (Fábricas)</button>
+            <button @click="currentTab = 'dashboard'" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'dashboard', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'dashboard'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'dashboard' ? 'ph-fill ph-squares-four' : 'ph ph-squares-four'"></i> Visão Global</button>
             <button @click="currentTab = 'usuarios'" :class="{'bg-indigo-600/10 text-indigo-400 border-indigo-500': currentTab === 'usuarios', 'border-transparent hover:bg-slate-800/50 hover:text-white': currentTab !== 'usuarios'}" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-l-4 font-medium"><i class="text-2xl" :class="currentTab === 'usuarios' ? 'ph-fill ph-users-three' : 'ph ph-users-three'"></i> Gestão de Acessos</button>
+            
+            <a href="index.html" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left border border-transparent hover:bg-slate-800/50 hover:text-white text-slate-500 font-medium mt-8 border-t border-slate-800 pt-6">
+                <i class="text-2xl ph-bold ph-arrow-left"></i> Voltar ao App
+            </a>
         </nav>
-
-        <div class="p-6 m-4 mt-0 bg-slate-800/40 rounded-2xl border border-slate-700/50 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-indigo-900/50 flex items-center justify-center border border-indigo-500/30 text-indigo-300"><i class="ph-fill ph-user-gear text-xl"></i></div>
-            <div class="overflow-hidden">
-                <p class="font-bold text-white text-sm truncate">Jean Braga</p>
-                <p class="text-xs text-indigo-400 truncate">Supervisor Geral</p>
-            </div>
-        </div>
     </aside>
 
     <main class="flex-1 p-10 overflow-y-auto w-full h-screen relative">
@@ -51,7 +47,7 @@
         <div v-if="currentTab === 'dashboard'" key="dashboard" class="max-w-7xl mx-auto">
             <div class="mb-8">
                 <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Visão Geral da Operação</h2>
-                <p class="text-slate-500 mt-1">Acompanhamento consolidado das unidades fabris.</p>
+                <p class="text-slate-500 mt-1">Acompanhamento consolidado de todas as unidades fabris.</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -64,7 +60,7 @@
                         </div>
                         <div class="flex items-end gap-3 mb-2">
                             <span class="text-5xl font-black text-indigo-600">{{ totalFabrica1 }}</span>
-                            <span class="text-sm text-slate-500 font-medium mb-1">apontamentos (total)</span>
+                            <span class="text-sm text-slate-500 font-medium mb-1">falhas processadas</span>
                         </div>
                     </div>
                 </div>
@@ -78,15 +74,15 @@
                         </div>
                         <div class="flex items-end gap-3 mb-2">
                             <span class="text-5xl font-black text-rose-600">{{ totalFabrica2 }}</span>
-                            <span class="text-sm text-slate-500 font-medium mb-1">apontamentos (total)</span>
+                            <span class="text-sm text-slate-500 font-medium mb-1">falhas processadas</span>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-700">
-                <h3 class="font-bold text-slate-800 dark:text-white mb-6">Comparativo de Ocorrências</h3>
-                <div class="relative h-72 w-full"><canvas id="adminChart"></canvas></div>
+            <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700">
+                <h3 class="font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2"><i class="ph-fill ph-chart-bar text-indigo-500"></i> Comparativo de Ocorrências (Top Causas)</h3>
+                <div class="relative h-80 w-full"><canvas id="adminChart"></canvas></div>
             </div>
         </div>
 
@@ -94,7 +90,7 @@
             <div class="mb-8 flex justify-between items-end">
                 <div>
                     <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Gestão de Acessos</h2>
-                    <p class="text-slate-500 mt-1">Cadastre os colaboradores e defina em quais fábricas eles podem lançar dados.</p>
+                    <p class="text-slate-500 mt-1">Gerencie os colaboradores, senhas e níveis de permissão.</p>
                 </div>
                 <button @click="abrirModalUsuario" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg hover:-translate-y-0.5 transition-all">
                     <i class="ph-bold ph-plus"></i> Novo Usuário
@@ -104,31 +100,38 @@
             <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-slate-500 text-xs font-bold uppercase">
-                            <th class="px-6 py-5">Nome do Colaborador</th>
-                            <th class="px-6 py-5">E-mail de Acesso</th>
-                            <th class="px-6 py-5">Permissões de Fábrica</th>
+                        <tr class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-slate-500 text-xs font-bold uppercase tracking-wide">
+                            <th class="px-6 py-5">Colaborador</th>
+                            <th class="px-6 py-5">E-mail</th>
+                            <th class="px-6 py-5">Nível de Acesso</th>
+                            <th class="px-6 py-5">Fábricas</th>
                             <th class="px-6 py-5 text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody class="text-sm divide-y divide-slate-100 dark:divide-slate-700">
-                        <tr v-for="user in usuarios" :key="user.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                        <tr v-for="user in usuarios" :key="user.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                             <td class="px-6 py-4 font-bold text-slate-700 dark:text-slate-200 flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">{{ user.nome.charAt(0) }}</div>
+                                <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-xs border border-slate-200 dark:border-slate-600">{{ user.nome.charAt(0) }}</div>
                                 {{ user.nome }}
                             </td>
-                            <td class="px-6 py-4 text-slate-500">{{ user.email }}</td>
+                            <td class="px-6 py-4 text-slate-500 dark:text-slate-400">{{ user.email }}</td>
+                            <td class="px-6 py-4">
+                                <span class="font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/50 px-3 py-1 rounded-lg text-xs">{{ user.nivelAcesso }}</span>
+                            </td>
                             <td class="px-6 py-4">
                                 <div class="flex gap-2">
-                                    <span v-if="user.fabricas.includes('Fábrica 1')" class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md text-xs font-bold">Fábrica 1</span>
-                                    <span v-if="user.fabricas.includes('Fábrica 2')" class="bg-rose-100 text-rose-700 px-2 py-1 rounded-md text-xs font-bold">Fábrica 2</span>
+                                    <span v-if="user.fabricas.includes('Fábrica 1')" class="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">Fábrica 1</span>
+                                    <span v-if="user.fabricas.includes('Fábrica 2')" class="bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">Fábrica 2</span>
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-center">
-                                <button @click="deletarUsuario(user.id)" class="text-slate-400 hover:text-rose-500 p-2 rounded-lg transition-all" title="Excluir Usuário">
+                                <button @click="deletarUsuario(user.id)" class="text-slate-400 hover:text-rose-500 bg-white dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-900/30 p-2 rounded-lg transition-all border border-transparent hover:border-rose-200 dark:hover:border-rose-800" title="Revogar Acesso">
                                     <i class="ph-fill ph-trash text-xl"></i>
                                 </button>
                             </td>
+                        </tr>
+                        <tr v-if="usuarios.length === 0">
+                            <td colspan="5" class="px-6 py-8 text-center text-slate-500 font-medium">Nenhum usuário cadastrado. Você está no modo de configuração inicial.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -136,8 +139,8 @@
         </div>
 
         <div v-if="modalAberto" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-lg w-full shadow-2xl border border-slate-200 dark:border-slate-700 relative">
-                <button @click="modalAberto = false" class="absolute top-6 right-6 text-slate-400 hover:text-rose-500"><i class="ph-bold ph-x text-2xl"></i></button>
+            <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-lg w-full shadow-2xl border border-slate-200 dark:border-slate-700 relative transition-colors">
+                <button @click="modalAberto = false" class="absolute top-6 right-6 text-slate-400 hover:text-rose-500 transition-colors"><i class="ph-bold ph-x text-2xl"></i></button>
                 <h3 class="text-2xl font-bold text-slate-800 dark:text-white mb-6">Cadastrar Usuário</h3>
                 
                 <form @submit.prevent="salvarUsuario">
@@ -150,27 +153,38 @@
                             <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">E-mail de Acesso</label>
                             <input type="email" v-model="form.email" class="input-modern" required placeholder="colaborador@qualitrack.com">
                         </div>
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Senha</label>
-                            <input type="password" v-model="form.senha" class="input-modern" required placeholder="••••••••">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Senha</label>
+                                <input type="password" v-model="form.senha" class="input-modern" required placeholder="••••••••">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Nível de Acesso</label>
+                                <select v-model="form.nivelAcesso" class="input-modern" required>
+                                    <option value="" disabled selected>Selecione...</option>
+                                    <option value="Técnico">Técnico</option>
+                                    <option value="Supervisor">Supervisor</option>
+                                    <option value="Coordenador">Coordenador</option>
+                                </select>
+                            </div>
                         </div>
                         
-                        <div class="pt-4 border-t border-slate-100 dark:border-slate-700">
+                        <div class="pt-4 border-t border-slate-100 dark:border-slate-700 mt-2">
                             <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">Vincular às Fábricas</label>
-                            <div class="flex gap-6">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" v-model="form.fabricas" value="Fábrica 1" class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500">
-                                    <span class="font-medium text-slate-600 dark:text-slate-300">Fábrica 1</span>
+                            <div class="flex gap-6 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                                <label class="flex items-center gap-2 cursor-pointer group">
+                                    <input type="checkbox" v-model="form.fabricas" value="Fábrica 1" class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600">
+                                    <span class="font-bold text-slate-600 dark:text-slate-300 group-hover:text-indigo-600 transition-colors">Fábrica 1</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" v-model="form.fabricas" value="Fábrica 2" class="w-5 h-5 rounded text-rose-600 focus:ring-rose-500">
-                                    <span class="font-medium text-slate-600 dark:text-slate-300">Fábrica 2</span>
+                                <label class="flex items-center gap-2 cursor-pointer group">
+                                    <input type="checkbox" v-model="form.fabricas" value="Fábrica 2" class="w-5 h-5 rounded text-rose-600 focus:ring-rose-500 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600">
+                                    <span class="font-bold text-slate-600 dark:text-slate-300 group-hover:text-rose-600 transition-colors">Fábrica 2</span>
                                 </label>
                             </div>
                         </div>
                     </div>
                     
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition-colors">Confirmar Cadastro</button>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition-colors shadow-lg hover:-translate-y-0.5">Criar Acesso</button>
                 </form>
             </div>
         </div>
