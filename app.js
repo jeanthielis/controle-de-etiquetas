@@ -233,31 +233,73 @@ createApp({
         };
 
         const statusEquipe = computed(() => {
-            const dataLimite = new Date(); dataLimite.setDate(dataLimite.getDate() - 60);
+            // Data limite padrão: 60 dias atrás
+            const dataLimiteNormal = new Date(); dataLimiteNormal.setDate(dataLimiteNormal.getDate() - 60);
+            // Data limite RPV: 6 meses atrás
+            const dataLimiteRPV = new Date(); dataLimiteRPV.setMonth(dataLimiteRPV.getMonth() - 6);
+
             return colaboradoresFiltrados.value.map(nomeResp => {
-                const registrosRecentes = registros.value.filter(r => 
-                    r.contabilizar !== false && r.dataObj && r.responsavel === nomeResp && r.dataObj >= dataLimite
+                // Filtrar os registros válidos do colaborador
+                const registrosValidos = registros.value.filter(r => 
+                    r.contabilizar !== false && r.dataObj && r.responsavel === nomeResp
                 );
                 
-                let total = 0; let erroDeVez = false;
-                registrosRecentes.forEach(r => { 
+                let totalGeral = 0; 
+                let erroDeVez = false;
+                let temRPVRecente = false;
+
+                registrosValidos.forEach(r => { 
+                    // Identifica se a causa contém a sigla RPV
+                    const isRPV = r.causa && r.causa.toUpperCase().includes('RPV');
                     const qtd = Number(r.quantidade || 1);
-                    total += qtd; 
-                    if (qtd >= 3) erroDeVez = true; 
+
+                    // Regra 1: Se for RPV, avalia na janela de 6 meses
+                    if (isRPV && r.dataObj >= dataLimiteRPV) {
+                        temRPVRecente = true;
+                        totalGeral += qtd;
+                    } 
+                    // Regra 2: Se for outra causa normal, avalia na janela de 60 dias
+                    else if (!isRPV && r.dataObj >= dataLimiteNormal) {
+                        totalGeral += qtd; 
+                        if (qtd >= 3) erroDeVez = true; 
+                    }
                 });
                 
-                let status = "Sem advertência"; let cor = "text-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800";
-                if (erroDeVez || total >= 3) { status = "Advertência Escrita"; cor = "text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-300 dark:border-rose-800"; } 
-                else if (total === 2) { status = "Advertência Verbal"; cor = "text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-800"; }
+                let status = "Sem advertência"; 
+                let cor = "text-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800";
                 
-                return { nome: nomeResp, total, status, cor };
+                // Aplicação das consequências (RPV tem prioridade máxima)
+                if (temRPVRecente) {
+                    status = "Adv. Escrita (RPV)";
+                    cor = "text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-300 dark:border-rose-800";
+                } else if (erroDeVez || totalGeral >= 3) { 
+                    status = "Advertência Escrita"; 
+                    cor = "text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-300 dark:border-rose-800"; 
+                } else if (totalGeral === 2) { 
+                    status = "Advertência Verbal"; 
+                    cor = "text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-800"; 
+                }
+                
+                return { nome: nomeResp, total: totalGeral, status, cor };
             }).sort((a, b) => b.total - a.total);
         });
 
         const destaquesEquipe = computed(() => {
-            const dataLimite = new Date(); dataLimite.setDate(dataLimite.getDate() - 60);
+            const dataLimiteNormal = new Date(); dataLimiteNormal.setDate(dataLimiteNormal.getDate() - 60);
+            const dataLimiteRPV = new Date(); dataLimiteRPV.setMonth(dataLimiteRPV.getMonth() - 6);
+
             return colaboradoresFiltrados.value.filter(nomeResp => {
-                return !registros.value.some(r => r.contabilizar !== false && r.dataObj && r.responsavel === nomeResp && r.dataObj >= dataLimite);
+                return !registros.value.some(r => {
+                    if (r.contabilizar === false || !r.dataObj || r.responsavel !== nomeResp) return false;
+                    
+                    const isRPV = r.causa && r.causa.toUpperCase().includes('RPV');
+                    
+                    // Impede o destaque se tiver RPV nos últimos 6 meses OU erro normal nos últimos 60 dias
+                    if (isRPV && r.dataObj >= dataLimiteRPV) return true;
+                    if (!isRPV && r.dataObj >= dataLimiteNormal) return true;
+                    
+                    return false;
+                });
             });
         });
 
