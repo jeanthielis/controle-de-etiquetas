@@ -180,7 +180,7 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                         <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden transition-colors" :class="{ 'border-red-300 dark:border-red-900 shadow-red-100/50': totalProducao > limiteProducao }">
                             <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] -z-0 transition-colors" :class="totalProducao > limiteProducao ? 'bg-red-50 dark:bg-red-900/10' : 'bg-emerald-50 dark:bg-emerald-900/10'"></div>
                             <div class="relative z-10">
@@ -203,22 +203,43 @@
                         </div>
 
                         <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden transition-colors" :class="{ 'border-red-300 dark:border-red-900 shadow-red-100/50': totalEstoque > limiteEstoque }">
-                            <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] -z-0 transition-colors" :class="totalEstoque > limiteEstoque ? 'bg-red-50 dark:bg-red-900/10' : 'bg-emerald-50 dark:bg-emerald-900/10'"></div>
+                            <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] -z-0 transition-colors" :class="totalEstoque > limiteEstoque ? 'bg-red-50 dark:bg-red-900/10' : 'bg-cyan-50 dark:bg-cyan-900/10'"></div>
                             <div class="relative z-10">
                                 <div class="flex items-center justify-between mb-4">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" :class="totalEstoque > limiteEstoque ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" :class="totalEstoque > limiteEstoque ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400'">
                                             <i class="ph-fill ph-package text-xl"></i>
                                         </div>
-                                        <h3 class="font-bold text-sm uppercase tracking-wider transition-colors" :class="totalEstoque > limiteEstoque ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">Desvios Estoque</h3>
+                                        <h3 class="font-bold text-sm uppercase tracking-wider transition-colors" :class="totalEstoque > limiteEstoque ? 'text-red-600 dark:text-red-400' : 'text-cyan-600 dark:text-cyan-400'">Desvios Estoque</h3>
                                     </div>
                                 </div>
                                 <div class="flex items-end gap-3 mb-6">
-                                    <span class="text-5xl font-black transition-colors" :class="totalEstoque > limiteEstoque ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">{{ totalEstoque }}</span>
+                                    <span class="text-5xl font-black transition-colors" :class="totalEstoque > limiteEstoque ? 'text-red-600 dark:text-red-400' : 'text-cyan-600 dark:text-cyan-400'">{{ totalEstoque }}</span>
                                     <span class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-1 border-l-2 border-slate-200 dark:border-slate-700 pl-3">Meta: <span class="text-slate-700 dark:text-slate-200 font-bold">{{ limiteEstoque }}</span></span>
                                 </div>
                                 <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden shadow-inner">
-                                    <div class="h-full rounded-full transition-all duration-1000 ease-out" :class="totalEstoque > limiteEstoque ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-emerald-400 to-emerald-600'" :style="{ width: Math.min(percentualEstoque, 100) + '%' }"></div>
+                                    <div class="h-full rounded-full transition-all duration-1000 ease-out" :class="totalEstoque > limiteEstoque ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-cyan-400 to-cyan-600'" :style="{ width: Math.min(percentualEstoque, 100) + '%' }"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden transition-colors" :class="{ 'border-red-300 dark:border-red-900 shadow-red-100/50': totalRPV > limiteRPV }">
+                            <div class="absolute right-0 top-0 w-32 h-32 rounded-bl-[100px] -z-0 transition-colors" :class="totalRPV > limiteRPV ? 'bg-red-50 dark:bg-red-900/10' : 'bg-purple-50 dark:bg-purple-900/10'"></div>
+                            <div class="relative z-10">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" :class="totalRPV > limiteRPV ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'">
+                                            <i class="ph-fill ph-headset text-xl"></i>
+                                        </div>
+                                        <h3 class="font-bold text-sm uppercase tracking-wider transition-colors" :class="totalRPV > limiteRPV ? 'text-red-600 dark:text-red-400' : 'text-purple-600 dark:text-purple-400'">Reclamações (RPV)</h3>
+                                    </div>
+                                </div>
+                                <div class="flex items-end gap-3 mb-6">
+                                    <span class="text-5xl font-black transition-colors" :class="totalRPV > limiteRPV ? 'text-red-600 dark:text-red-400' : 'text-purple-600 dark:text-purple-400'">{{ totalRPV }}</span>
+                                    <span class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-1 border-l-2 border-slate-200 dark:border-slate-700 pl-3">Meta: <span class="text-slate-700 dark:text-slate-200 font-bold">{{ limiteRPV }}</span></span>
+                                </div>
+                                <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden shadow-inner">
+                                    <div class="h-full rounded-full transition-all duration-1000 ease-out" :class="totalRPV > limiteRPV ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-purple-400 to-purple-600'" :style="{ width: Math.min(percentualRPV, 100) + '%' }"></div>
                                 </div>
                             </div>
                         </div>
@@ -239,7 +260,7 @@
                     </div>
                     
                     <div v-if="regraAtiva && destaquesEquipe.length > 0" class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-6 shadow-sm mb-8 w-full text-white">
-                        <h3 class="font-bold flex items-center gap-2 text-lg mb-6"><i class="ph-fill ph-medal text-2xl text-yellow-300"></i> Destaques da Operação <span class="text-xs text-emerald-100 font-medium ml-2 border-l pl-2 border-emerald-400 hidden sm:inline-block">Zero Ocorrências (Últimos 60 dias)</span></h3>
+                        <h3 class="font-bold flex items-center gap-2 text-lg mb-6"><i class="ph-fill ph-medal text-2xl text-yellow-300"></i> Destaques da Operação <span class="text-xs text-emerald-100 font-medium ml-2 border-l pl-2 border-emerald-400 hidden sm:inline-block">Zero Ocorrências</span></h3>
                         <div class="flex flex-wrap gap-3">
                             <button v-for="destaque in destaquesEquipe" :key="destaque" @click="abrirRaioX(destaque)" class="bg-white/20 hover:bg-white/30 transition-colors backdrop-blur-sm border border-white/30 px-4 py-2 rounded-xl font-bold flex items-center gap-2 shadow-sm hover:-translate-y-1"><i class="ph-fill ph-star text-yellow-300"></i> {{ destaque }}</button>
                         </div>
@@ -276,7 +297,7 @@
                     <form @submit.prevent="salvarRegistro" class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700">
                         <div class="mb-8">
                             <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 uppercase tracking-wide">Setor</label>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <label class="relative cursor-pointer group">
                                     <input type="radio" v-model="form.local" value="Produção" class="peer sr-only" required>
                                     <div class="p-6 rounded-2xl border-2 border-slate-200 dark:border-slate-600 peer-checked:border-rose-500 dark:peer-checked:border-rose-500 peer-checked:bg-rose-50 dark:peer-checked:bg-rose-900/20 transition-all flex flex-col items-center justify-center gap-3">
@@ -289,6 +310,13 @@
                                     <div class="p-6 rounded-2xl border-2 border-slate-200 dark:border-slate-600 peer-checked:border-cyan-500 dark:peer-checked:border-cyan-500 peer-checked:bg-cyan-50 dark:peer-checked:bg-cyan-900/20 transition-all flex flex-col items-center justify-center gap-3">
                                         <i class="ph-fill ph-package text-3xl text-slate-400 peer-checked:text-cyan-600"></i>
                                         <span class="font-bold text-slate-600 peer-checked:text-cyan-700">Área de Estoque</span>
+                                    </div>
+                                </label>
+                                <label class="relative cursor-pointer group">
+                                    <input type="radio" v-model="form.local" value="RPV" class="peer sr-only">
+                                    <div class="p-6 rounded-2xl border-2 border-slate-200 dark:border-slate-600 peer-checked:border-purple-500 dark:peer-checked:border-purple-500 peer-checked:bg-purple-50 dark:peer-checked:bg-purple-900/20 transition-all flex flex-col items-center justify-center gap-3">
+                                        <i class="ph-fill ph-headset text-3xl text-slate-400 peer-checked:text-purple-600"></i>
+                                        <span class="font-bold text-slate-600 peer-checked:text-purple-700">Pós-Venda (RPV)</span>
                                     </div>
                                 </label>
                             </div>
@@ -338,9 +366,10 @@
                 <div v-else-if="currentTab === 'historico'" key="historico" class="max-w-7xl mx-auto">
                     <div class="mb-8"><h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Base de Conhecimento</h2></div>
                     <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
-                        <div class="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 p-2 gap-2">
-                            <button @click="abaHistorico = 'Produção'" class="flex-1 py-3 rounded-xl border font-bold" :class="abaHistorico === 'Produção' ? 'bg-white shadow-sm text-rose-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600' : 'text-slate-500 border-transparent'">Produção</button>
-                            <button @click="abaHistorico = 'Estoque'" class="flex-1 py-3 rounded-xl border font-bold" :class="abaHistorico === 'Estoque' ? 'bg-white shadow-sm text-cyan-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600' : 'text-slate-500 border-transparent'">Estoque</button>
+                        <div class="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 p-2 gap-2 overflow-x-auto">
+                            <button @click="abaHistorico = 'Produção'" class="flex-1 py-3 rounded-xl border font-bold min-w-[100px]" :class="abaHistorico === 'Produção' ? 'bg-white shadow-sm text-rose-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600' : 'text-slate-500 border-transparent'">Produção</button>
+                            <button @click="abaHistorico = 'Estoque'" class="flex-1 py-3 rounded-xl border font-bold min-w-[100px]" :class="abaHistorico === 'Estoque' ? 'bg-white shadow-sm text-cyan-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600' : 'text-slate-500 border-transparent'">Estoque</button>
+                            <button @click="abaHistorico = 'RPV'" class="flex-1 py-3 rounded-xl border font-bold min-w-[100px]" :class="abaHistorico === 'RPV' ? 'bg-white shadow-sm text-purple-600 border-slate-200 dark:bg-slate-800 dark:border-slate-600' : 'text-slate-500 border-transparent'">RPV</button>
                         </div>
                         
                         <div class="p-6 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 flex flex-col md:flex-row gap-4 items-end transition-colors">
@@ -372,7 +401,7 @@
                                     <tr v-for="reg in historicoFiltrado" :key="reg.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                                         <td class="px-6 py-4 font-bold text-slate-700 dark:text-slate-200">{{ reg.dataHoraFormatada.split(' ')[0] }} <span class="text-xs text-slate-400 font-medium ml-1">{{ reg.dataHoraFormatada.split(' ')[1] }}</span></td>
                                         <td class="px-6 py-4">
-                                            <span class="w-2 h-2 inline-block rounded-full mr-2" :class="abaHistorico === 'Produção' ? 'bg-rose-500' : 'bg-cyan-500'"></span>
+                                            <span class="w-2 h-2 inline-block rounded-full mr-2" :class="reg.local === 'Produção' ? 'bg-rose-500' : (reg.local === 'Estoque' ? 'bg-cyan-500' : 'bg-purple-500')"></span>
                                             <span class="font-semibold">{{ reg.causa }}</span>
                                         </td>
                                         <td class="px-6 py-4 font-medium">{{ reg.responsavel }}</td>
@@ -456,6 +485,7 @@
                                 <select v-model="modalEdicao.local" class="input-modern" required>
                                     <option value="Produção">Produção</option>
                                     <option value="Estoque">Estoque</option>
+                                    <option value="RPV">RPV</option>
                                 </select>
                             </div>
                             <div>
