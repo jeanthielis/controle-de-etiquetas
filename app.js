@@ -19,6 +19,7 @@ createApp({
         const mensagemSucesso = ref(false);
         const visaoMetas = ref('mensal'); 
         const abaHistorico = ref('Produção');
+        const abaConsequencias = ref('Geral');
         const carregando = ref(false);
         const chartInstance = ref(null);
 
@@ -231,39 +232,42 @@ createApp({
         };
 
         const statusEquipe = computed(() => {
+            const isRPVTab = abaConsequencias.value === 'RPV';
+            
             const dataLimiteNormal = new Date(); dataLimiteNormal.setDate(dataLimiteNormal.getDate() - 60);
             const dataLimiteRPV = new Date(); dataLimiteRPV.setMonth(dataLimiteRPV.getMonth() - 6);
+            const dataLimite = isRPVTab ? dataLimiteRPV : dataLimiteNormal;
 
             return colaboradoresFiltrados.value.map(nomeResp => {
                 const registrosValidos = registros.value.filter(r => 
-                    r.contabilizar !== false && r.dataObj && r.responsavel === nomeResp
+                    r.contabilizar !== false && r.dataObj && r.responsavel === nomeResp &&
+                    (isRPVTab ? r.local === 'RPV' : r.local !== 'RPV') && 
+                    r.dataObj >= dataLimite
                 );
                 
-                let totalGeral = 0; let erroDeVez = false; let temRPVRecente = false;
-
+                let totalGeral = 0; 
+                let erroDeVez = false; 
+                
                 registrosValidos.forEach(r => { 
-                    const isRPV = r.local === 'RPV';
                     const qtd = Number(r.quantidade || 1);
-
-                    if (isRPV && r.dataObj >= dataLimiteRPV) {
-                        temRPVRecente = true;
-                        totalGeral += qtd;
-                    } else if (!isRPV && r.dataObj >= dataLimiteNormal) {
-                        totalGeral += qtd; 
-                        if (qtd >= 3) erroDeVez = true; 
-                    }
+                    totalGeral += qtd; 
+                    if (qtd >= 3) erroDeVez = true; 
                 });
                 
                 let status = "Sem advertência"; 
                 let cor = "text-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800";
                 
-                if (temRPVRecente) {
-                    status = "Adv. Escrita (RPV)";
-                    cor = "text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-300 dark:border-rose-800";
-                } else if (erroDeVez || totalGeral >= 3) { 
-                    status = "Advertência Escrita"; cor = "text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-300 dark:border-rose-800"; 
-                } else if (totalGeral === 2) { 
-                    status = "Advertência Verbal"; cor = "text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-800"; 
+                if (isRPVTab) {
+                    if (totalGeral > 0) {
+                        status = "Adv. Escrita (RPV)";
+                        cor = "text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-300 dark:border-rose-800";
+                    }
+                } else {
+                    if (erroDeVez || totalGeral >= 3) { 
+                        status = "Advertência Escrita"; cor = "text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-300 dark:border-rose-800"; 
+                    } else if (totalGeral === 2) { 
+                        status = "Advertência Verbal"; cor = "text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-800"; 
+                    }
                 }
                 
                 return { nome: nomeResp, total: totalGeral, status, cor };
@@ -271,16 +275,21 @@ createApp({
         });
 
         const destaquesEquipe = computed(() => {
+            const isRPVTab = abaConsequencias.value === 'RPV';
+            
             const dataLimiteNormal = new Date(); dataLimiteNormal.setDate(dataLimiteNormal.getDate() - 60);
             const dataLimiteRPV = new Date(); dataLimiteRPV.setMonth(dataLimiteRPV.getMonth() - 6);
+            const dataLimite = isRPVTab ? dataLimiteRPV : dataLimiteNormal;
 
             return colaboradoresFiltrados.value.filter(nomeResp => {
                 return !registros.value.some(r => {
                     if (r.contabilizar === false || !r.dataObj || r.responsavel !== nomeResp) return false;
-                    const isRPV = r.local === 'RPV';
-                    if (isRPV && r.dataObj >= dataLimiteRPV) return true;
-                    if (!isRPV && r.dataObj >= dataLimiteNormal) return true;
-                    return false;
+                    
+                    if (isRPVTab) {
+                        return r.local === 'RPV' && r.dataObj >= dataLimite;
+                    } else {
+                        return r.local !== 'RPV' && r.dataObj >= dataLimite;
+                    }
                 });
             });
         });
@@ -340,7 +349,7 @@ createApp({
         watch(currentTab, (newTab) => { if (newTab === 'dashboard') setTimeout(renderizarGraficoEvolucao, 350); });
 
         return {
-            usuarioLogado, loginForm, erroLogin, fazerLogin, fazerLogout, salvarSessao, currentTab, menuMobileAberto, mudarAba, carregando, isDarkMode, toggleTheme, regraAtiva, salvarRegra, form, salvarRegistro, mensagemSucesso, modalEdicao, abrirEdicao, salvarEdicao, visaoMetas, metas, salvarConfiguracoes, totalProducao, totalEstoque, totalRPV, percentualProducao, percentualEstoque, percentualRPV, limiteProducao, limiteEstoque, limiteRPV, registros, abaHistorico, filtros, historicoFiltrado, limparFiltros, deletarRegistro, listaCausas, novaCausa, adicionarCausa, removerCausa, listaResponsaveis, formColaborador, adicionarColaborador, removerColaborador, statusEquipe, destaquesEquipe, modalRaioX, abrirRaioX, modalSenha, abrirModalSenha, alterarSenha, colaboradoresFiltrados, responsaveisDoUsuario
+            usuarioLogado, loginForm, erroLogin, fazerLogin, fazerLogout, salvarSessao, currentTab, menuMobileAberto, mudarAba, carregando, isDarkMode, toggleTheme, regraAtiva, salvarRegra, form, salvarRegistro, mensagemSucesso, modalEdicao, abrirEdicao, salvarEdicao, visaoMetas, metas, salvarConfiguracoes, totalProducao, totalEstoque, totalRPV, percentualProducao, percentualEstoque, percentualRPV, limiteProducao, limiteEstoque, limiteRPV, registros, abaHistorico, abaConsequencias, filtros, historicoFiltrado, limparFiltros, deletarRegistro, listaCausas, novaCausa, adicionarCausa, removerCausa, listaResponsaveis, formColaborador, adicionarColaborador, removerColaborador, statusEquipe, destaquesEquipe, modalRaioX, abrirRaioX, modalSenha, abrirModalSenha, alterarSenha, colaboradoresFiltrados, responsaveisDoUsuario
         }
     }
 }).mount('#app')
