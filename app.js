@@ -25,6 +25,7 @@ createApp({
         const chartInstance = ref(null);
         const chartInstanceFormatos = ref(null);
         const chartInstanceLinhas = ref(null);
+        const chartInstancePareto = ref(null); // Instância do novo gráfico
 
         const mesAtualFormato = () => {
             const d = new Date();
@@ -45,7 +46,6 @@ createApp({
         const listaCausas = ref([]);
         const listaResponsaveis = ref([]); 
         
-        // Novas Listas para Configurações
         const listaFormatos = ref([]);
         const listaLinhas = ref([]);
 
@@ -57,7 +57,7 @@ createApp({
         const filtros = reactive({ causa: '', responsavel: '' });
         const form = reactive({ 
             local: '', causa: '', responsavel: '', 
-            formato: '', linha: '', // Novos campos no formulário
+            formato: '', linha: '', 
             quantidade: 1, dataOcorrencia: gerarDataAtualInput(), contabilizar: true 
         });
         
@@ -126,8 +126,8 @@ createApp({
                     if (data.regraAtiva !== undefined) regraAtiva.value = data.regraAtiva;
                     if (data.metas) Object.assign(metas, data.metas);
                     if (data.causas) listaCausas.value = data.causas;
-                    if (data.formatos) listaFormatos.value = data.formatos; // Caregar formatos
-                    if (data.linhas) listaLinhas.value = data.linhas;       // Carregar linhas
+                    if (data.formatos) listaFormatos.value = data.formatos;
+                    if (data.linhas) listaLinhas.value = data.linhas;
                     
                     if (data.responsaveis) {
                         listaResponsaveis.value = data.responsaveis.map(item => {
@@ -155,7 +155,7 @@ createApp({
                     dadosMapeados.push({ 
                         id: docSnap.id, local: dado.local, causa: dado.causa, 
                         responsavel: nomeResponsavel || 'Indefinido', 
-                        formato: dado.formato || '', linha: dado.linha || '', // Mapeando
+                        formato: dado.formato || '', linha: dado.linha || '', 
                         quantidade: Number(dado.quantidade || 1), 
                         dataHoraFormatada: dataFormatada, dataObj: d, 
                         ordenacaoTempo: tempoMilisegundos, contabilizar: dado.contabilizar !== false, 
@@ -185,8 +185,6 @@ createApp({
         
         const adicionarCausa = () => { if(novaCausa.value.trim()){ listaCausas.value.push(novaCausa.value.trim()); novaCausa.value = ''; salvarConfiguracoes(); } };
         const removerCausa = (index) => { listaCausas.value.splice(index, 1); salvarConfiguracoes(); };
-        
-        // Funções de Gestão de Formatos e Linhas
         const adicionarFormato = () => { if(novoFormato.value.trim()){ listaFormatos.value.push(novoFormato.value.trim()); novoFormato.value = ''; salvarConfiguracoes(); } };
         const removerFormato = (index) => { listaFormatos.value.splice(index, 1); salvarConfiguracoes(); };
         const adicionarLinha = () => { if(novaLinha.value.trim()){ listaLinhas.value.push(novaLinha.value.trim()); novaLinha.value = ''; salvarConfiguracoes(); } };
@@ -217,7 +215,7 @@ createApp({
             try {
                 await addDoc(collection(db, "registros"), {
                     local: form.local, causa: form.causa, responsavel: form.responsavel, 
-                    formato: form.formato, linha: form.linha, // Gravando campos
+                    formato: form.formato, linha: form.linha, 
                     quantidade: Number(form.quantidade), timestamp: new Date(form.dataOcorrencia), 
                     contabilizar: form.contabilizar, fabrica: usuarioLogado.value.fabricaAtual
                 });
@@ -315,7 +313,7 @@ createApp({
         const renderizarGraficos = () => {
             const tc = isDarkMode.value ? '#94a3b8' : '#64748b'; const gc = isDarkMode.value ? '#334155' : '#f1f5f9';
 
-            // 1. Gráfico de Evolução
+            // 1. Gráfico de Evolução Mensal
             const ctxEvolucao = document.getElementById('evolucaoChart'); 
             if (ctxEvolucao) {
                 if (chartInstance.value) chartInstance.value.destroy();
@@ -353,7 +351,115 @@ createApp({
                 });
             }
 
-            // 2. Gráfico de Formatos (Ranking Horizontal)
+            // NOVO: Gráfico de Pareto (Causas)
+            const ctxPareto = document.getElementById('chartPareto');
+            if (ctxPareto) {
+                if (chartInstancePareto.value) chartInstancePareto.value.destroy();
+
+                const causaCounts = {};
+                let totalOcorrencias = 0;
+
+                // Somar falhas por causa no período
+                registrosDoPeriodo.value.forEach(r => {
+                    const qtd = r.quantidade || 1;
+                    causaCounts[r.causa] = (causaCounts[r.causa] || 0) + qtd;
+                    totalOcorrencias += qtd;
+                });
+
+                // Ordenar decrescente
+                const sortedCausas = Object.entries(causaCounts).sort((a, b) => b[1] - a[1]);
+
+                const labelsPareto = [];
+                const dataBarPareto = [];
+                const dataLinePareto = [];
+                let acumulado = 0;
+
+                // Calcular porcentagem acumulada
+                sortedCausas.forEach(([causa, count]) => {
+                    labelsPareto.push(causa);
+                    dataBarPareto.push(count);
+                    acumulado += count;
+                    dataLinePareto.push(((acumulado / totalOcorrencias) * 100).toFixed(1));
+                });
+
+                chartInstancePareto.value = new Chart(ctxPareto, {
+                    type: 'bar',
+                    data: {
+                        labels: labelsPareto,
+                        datasets: [
+                            {
+                                type: 'line',
+                                label: '% Acumulado',
+                                data: dataLinePareto,
+                                borderColor: '#ef4444', // Vermelho (Linha)
+                                backgroundColor: '#ef4444',
+                                borderWidth: 3,
+                                yAxisID: 'y1',
+                                tension: 0.3, // Deixa a linha levemente curva
+                                marker: { radius: 5 }
+                            },
+                            {
+                                type: 'bar',
+                                label: 'Frequência (Ocorrências)',
+                                data: dataBarPareto,
+                                backgroundColor: '#4f46e5', // Indigo (Barras)
+                                borderRadius: 4,
+                                yAxisID: 'y'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        scales: {
+                            x: {
+                                ticks: { color: tc, font: { weight: 'bold' } },
+                                grid: { display: false }
+                            },
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                title: { display: true, text: 'Qtd. de Ocorrências', color: tc },
+                                ticks: { color: tc },
+                                grid: { color: gc, drawBorder: false }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                title: { display: true, text: 'Porcentagem (%)', color: tc },
+                                min: 0,
+                                max: 100,
+                                ticks: {
+                                    color: tc,
+                                    callback: function(value) { return value + '%' }
+                                },
+                                grid: { drawOnChartArea: false } // Esconde o grid line de fundo desse eixo para não bugar
+                            }
+                        },
+                        plugins: {
+                            legend: { labels: { color: tc } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) { label += ': '; }
+                                        if (context.parsed.y !== null) {
+                                            label += context.parsed.y;
+                                            if (context.datasetIndex === 0) label += '%'; // Adiciona o % apenas na linha
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 3. Gráfico de Formatos (Ranking Horizontal)
             const ctxFormatos = document.getElementById('chartFormatos');
             if (ctxFormatos) {
                 if (chartInstanceFormatos.value) chartInstanceFormatos.value.destroy();
@@ -369,7 +475,7 @@ createApp({
                 });
             }
 
-            // 3. Gráfico de Linhas (Ranking Horizontal)
+            // 4. Gráfico de Linhas (Ranking Horizontal)
             const ctxLinhas = document.getElementById('chartLinhas');
             if (ctxLinhas) {
                 if (chartInstanceLinhas.value) chartInstanceLinhas.value.destroy();
