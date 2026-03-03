@@ -168,6 +168,7 @@
             </div>
 
             <transition name="fade" mode="out-in">
+                
                 <div v-if="currentTab === 'dashboard'" key="dashboard" class="max-w-7xl mx-auto">
                     
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -255,11 +256,27 @@
                         </div>
                     </div>
 
-                    <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-slate-700 w-full transition-colors">
+                    <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-slate-700 w-full transition-colors mb-8">
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 text-lg"><i class="ph-fill ph-chart-bar text-2xl text-indigo-500"></i> Evolução Mensal</h3>
                         </div>
                         <div class="relative h-72 md:h-80 w-full"><canvas id="evolucaoChart"></canvas></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-10">
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-slate-700 w-full transition-colors">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 text-lg"><i class="ph-fill ph-squares-four text-2xl text-amber-500"></i> Ofensores por Formato</h3>
+                            </div>
+                            <div class="relative h-64 w-full"><canvas id="chartFormatos"></canvas></div>
+                        </div>
+                        
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-slate-700 w-full transition-colors">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 text-lg"><i class="ph-fill ph-columns text-2xl text-blue-500"></i> Ofensores por Linha</h3>
+                            </div>
+                            <div class="relative h-64 w-full"><canvas id="chartLinhas"></canvas></div>
+                        </div>
                     </div>
                 </div>
 
@@ -339,7 +356,8 @@
                                 </label>
                             </div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8">
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-6">
                             <div class="md:col-span-4">
                                 <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Data e Hora</label>
                                 <input type="datetime-local" v-model="form.dataOcorrencia" class="input-modern" required>
@@ -351,18 +369,36 @@
                                     <option v-for="resp in colaboradoresFiltrados" :value="resp">{{ resp }}</option>
                                 </select>
                             </div>
-                            <div class="md:col-span-3">
+                            <div class="md:col-span-4">
                                 <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Motivo</label>
                                 <select v-model="form.causa" class="input-modern" required>
                                     <option value="" disabled selected>Diagnóstico...</option>
                                     <option v-for="causa in listaCausas" :value="causa">{{ causa }}</option>
                                 </select>
                             </div>
-                            <div class="md:col-span-1">
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8">
+                            <div class="md:col-span-5">
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Formato</label>
+                                <select v-model="form.formato" class="input-modern">
+                                    <option value="" disabled selected>Selecionar Formato...</option>
+                                    <option v-for="f in listaFormatos" :value="f">{{ f }}</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-5">
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Linha</label>
+                                <select v-model="form.linha" class="input-modern">
+                                    <option value="" disabled selected>Selecionar Linha...</option>
+                                    <option v-for="l in listaLinhas" :value="l">{{ l }}</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
                                 <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Qtd.</label>
                                 <input type="number" min="1" v-model="form.quantidade" class="input-modern px-2 font-bold text-center text-rose-600" required>
                             </div>
                         </div>
+
                         <div class="mb-2 mt-4" v-if="usuarioLogado.nivelAcesso !== 'Técnico'">
                             <label class="flex items-center gap-3 cursor-pointer group w-fit">
                                 <input type="checkbox" v-model="form.contabilizar" class="peer sr-only">
@@ -413,14 +449,18 @@
                         <div class="overflow-x-auto p-4">
                             <table class="w-full text-left border-collapse min-w-[700px]">
                                 <thead>
-                                    <tr class="text-slate-500 text-xs font-bold uppercase"><th class="px-6 py-5">Data e Hora</th><th class="px-6 py-5">Motivo</th><th class="px-6 py-5">Colaborador</th><th class="px-6 py-5 text-center">Ações</th></tr>
+                                    <tr class="text-slate-500 text-xs font-bold uppercase"><th class="px-6 py-5">Data e Hora</th><th class="px-6 py-5">Detalhes</th><th class="px-6 py-5">Colaborador</th><th class="px-6 py-5 text-center">Ações</th></tr>
                                 </thead>
                                 <tbody class="text-sm divide-y divide-slate-100 dark:divide-slate-700">
                                     <tr v-for="reg in historicoFiltrado" :key="reg.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                                         <td class="px-6 py-4 font-bold text-slate-700 dark:text-slate-200">{{ reg.dataHoraFormatada.split(' ')[0] }} <span class="text-xs text-slate-400 font-medium ml-1">{{ reg.dataHoraFormatada.split(' ')[1] }}</span></td>
                                         <td class="px-6 py-4">
-                                            <span class="w-2 h-2 inline-block rounded-full mr-2" :class="reg.local === 'Produção' ? 'bg-rose-500' : (reg.local === 'Estoque' ? 'bg-cyan-500' : 'bg-purple-500')"></span>
-                                            <span class="font-semibold">{{ reg.causa }}</span>
+                                            <div class="flex flex-col">
+                                                <span class="font-semibold text-slate-800 dark:text-white">{{ reg.causa }}</span>
+                                                <span class="text-xs text-slate-500 mt-1" v-if="reg.formato || reg.linha">
+                                                    {{ reg.formato || 'S/ Formato' }} • {{ reg.linha || 'S/ Linha' }}
+                                                </span>
+                                            </div>
                                         </td>
                                         <td class="px-6 py-4 font-medium">{{ reg.responsavel }}</td>
                                         <td class="px-6 py-4 text-center">
@@ -439,6 +479,7 @@
                         <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Painel de Controle</h2>
                         <p class="text-slate-500 dark:text-slate-400 mt-1">Configurações aplicáveis a <span class="font-bold">{{ usuarioLogado.fabricaAtual }}</span>.</p>
                     </div>
+                    
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col transition-colors">
                             <div class="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
@@ -449,7 +490,7 @@
                                 <input type="text" v-model="novaCausa" placeholder="Nova falha..." class="input-modern" required>
                                 <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 rounded-xl font-bold"><i class="ph-bold ph-plus"></i></button>
                             </form>
-                            <div class="flex-1 overflow-y-auto max-h-[300px] pr-2 space-y-3">
+                            <div class="flex-1 overflow-y-auto max-h-[250px] pr-2 space-y-3">
                                 <div v-for="(causa, index) in listaCausas" :key="index" class="flex justify-between items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300">
                                     <span class="truncate pr-2">{{ causa }}</span>
                                     <button @click="removerCausa(index)" class="text-slate-400 hover:text-rose-500"><i class="ph-fill ph-trash text-lg"></i></button>
@@ -476,13 +517,48 @@
                                     </label>
                                 </div>
                             </form>
-                            <div class="flex-1 overflow-y-auto max-h-[300px] pr-2 space-y-3">
+                            <div class="flex-1 overflow-y-auto max-h-[250px] pr-2 space-y-3">
                                 <div v-for="colab in responsaveisDoUsuario" :key="colab.nome" class="flex justify-between items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300">
                                     <span>{{ colab.nome }}</span>
                                     <button @click="removerColaborador(colab.nome)" class="text-slate-400 hover:text-rose-500"><i class="ph-fill ph-trash text-lg"></i></button>
                                 </div>
                             </div>
                         </div>
+
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col transition-colors">
+                            <div class="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
+                                <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center text-amber-500 dark:text-amber-400"><i class="ph-fill ph-squares-four text-2xl"></i></div>
+                                <h3 class="font-bold text-slate-800 dark:text-white text-lg">Gestão de Formatos</h3>
+                            </div>
+                            <form @submit.prevent="adicionarFormato" class="flex gap-2 mb-6">
+                                <input type="text" v-model="novoFormato" placeholder="Ex: 60x60 Retificado..." class="input-modern" required>
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 rounded-xl font-bold"><i class="ph-bold ph-plus"></i></button>
+                            </form>
+                            <div class="flex-1 overflow-y-auto max-h-[250px] pr-2 space-y-3">
+                                <div v-for="(f, index) in listaFormatos" :key="index" class="flex justify-between items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    <span class="truncate pr-2">{{ f }}</span>
+                                    <button @click="removerFormato(index)" class="text-slate-400 hover:text-rose-500"><i class="ph-fill ph-trash text-lg"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col transition-colors">
+                            <div class="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
+                                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-500 dark:text-blue-400"><i class="ph-fill ph-columns text-2xl"></i></div>
+                                <h3 class="font-bold text-slate-800 dark:text-white text-lg">Gestão de Linhas</h3>
+                            </div>
+                            <form @submit.prevent="adicionarLinha" class="flex gap-2 mb-6">
+                                <input type="text" v-model="novaLinha" placeholder="Ex: Linha A..." class="input-modern" required>
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 rounded-xl font-bold"><i class="ph-bold ph-plus"></i></button>
+                            </form>
+                            <div class="flex-1 overflow-y-auto max-h-[250px] pr-2 space-y-3">
+                                <div v-for="(l, index) in listaLinhas" :key="index" class="flex justify-between items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    <span class="truncate pr-2">{{ l }}</span>
+                                    <button @click="removerLinha(index)" class="text-slate-400 hover:text-rose-500"><i class="ph-fill ph-trash text-lg"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </transition>
@@ -507,10 +583,6 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Qtd.</label>
-                                <input type="number" min="1" v-model="modalEdicao.quantidade" class="input-modern font-bold text-rose-600 dark:text-rose-400" required>
-                            </div>
-                            <div>
                                 <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Colaborador</label>
                                 <select v-model="modalEdicao.responsavel" class="input-modern" required>
                                     <option v-for="resp in colaboradoresFiltrados" :value="resp">{{ resp }}</option>
@@ -520,6 +592,24 @@
                                 <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Motivo</label>
                                 <select v-model="modalEdicao.causa" class="input-modern" required>
                                     <option v-for="causa in listaCausas" :value="causa">{{ causa }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Qtd.</label>
+                                <input type="number" min="1" v-model="modalEdicao.quantidade" class="input-modern font-bold text-rose-600 dark:text-rose-400" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Formato</label>
+                                <select v-model="modalEdicao.formato" class="input-modern">
+                                    <option value="" disabled selected>Selecionar...</option>
+                                    <option v-for="f in listaFormatos" :value="f">{{ f }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Linha</label>
+                                <select v-model="modalEdicao.linha" class="input-modern">
+                                    <option value="" disabled selected>Selecionar...</option>
+                                    <option v-for="l in listaLinhas" :value="l">{{ l }}</option>
                                 </select>
                             </div>
                         </div>
@@ -562,11 +652,9 @@
                             <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Confirmar Nova Senha</label>
                             <input type="password" v-model="modalSenha.confirmarSenha" class="input-modern" required placeholder="••••••••">
                         </div>
-                        
                         <div v-if="modalSenha.mensagem" :class="modalSenha.erro ? 'text-rose-600 bg-rose-50 border-rose-200 dark:bg-rose-900/30 dark:border-rose-800' : 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800'" class="p-3 text-sm font-bold rounded-xl border text-center transition-colors">
                             {{ modalSenha.mensagem }}
                         </div>
-                        
                         <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg hover:-translate-y-0.5 mt-2">
                             Atualizar Minha Senha
                         </button>
@@ -576,7 +664,6 @@
 
         </main>
     </div>
-
 </div>
 <script type="module" src="./app.js"></script>
 </body>
