@@ -21,32 +21,43 @@ createApp({
         const abaHistorico = ref('Produção');
         const abaConsequencias = ref('Geral');
         const carregando = ref(false);
+        
         const chartInstance = ref(null);
+        const chartInstanceFormatos = ref(null);
+        const chartInstanceLinhas = ref(null);
 
-        // --- NOVA LÓGICA DO MÊS ---
         const mesAtualFormato = () => {
             const d = new Date();
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         };
         const mesSelecionado = ref(mesAtualFormato());
-        // --------------------------
 
         const isDarkMode = ref(localStorage.getItem('qc_theme') === 'dark');
         const toggleTheme = () => {
             isDarkMode.value = !isDarkMode.value;
             localStorage.setItem('qc_theme', isDarkMode.value ? 'dark' : 'light');
             document.documentElement.classList.toggle('dark', isDarkMode.value);
-            if (currentTab.value === 'dashboard') setTimeout(() => renderizarGraficoEvolucao(), 50);
+            if (currentTab.value === 'dashboard') setTimeout(() => renderizarGraficos(), 50);
         };
 
         const regraAtiva = ref(true);
         const metas = reactive({ producaoMensal: 0, producaoAnual: 0, estoqueMensal: 0, estoqueAnual: 0, rpvMensal: 0, rpvAnual: 0 });
         const listaCausas = ref([]);
         const listaResponsaveis = ref([]); 
+        
+        // Novas Listas para Configurações
+        const listaFormatos = ref([]);
+        const listaLinhas = ref([]);
+
+        const novaCausa = ref(''); 
+        const novoFormato = ref('');
+        const novaLinha = ref('');
+        const formColaborador = reactive({ nome: '', fabricas: [] });
 
         const filtros = reactive({ causa: '', responsavel: '' });
         const form = reactive({ 
             local: '', causa: '', responsavel: '', 
+            formato: '', linha: '', // Novos campos no formulário
             quantidade: 1, dataOcorrencia: gerarDataAtualInput(), contabilizar: true 
         });
         
@@ -58,9 +69,7 @@ createApp({
 
         const colaboradoresFiltrados = computed(() => {
             if (!usuarioLogado.value || !listaResponsaveis.value) return [];
-            
             const fabricaAtual = usuarioLogado.value.fabricaAtual || 'Fábrica 2';
-            
             return listaResponsaveis.value
                 .filter(c => {
                     const fabs = (c.fabricas && c.fabricas.length > 0) ? c.fabricas : ['Fábrica 2'];
@@ -71,9 +80,7 @@ createApp({
 
         const responsaveisDoUsuario = computed(() => {
             if (!usuarioLogado.value || !listaResponsaveis.value) return [];
-            if (usuarioLogado.value.nivelAcesso === 'Coordenador') {
-                return listaResponsaveis.value;
-            }
+            if (usuarioLogado.value.nivelAcesso === 'Coordenador') return listaResponsaveis.value;
             
             const userFabs = usuarioLogado.value.fabricas || ['Fábrica 2'];
             return listaResponsaveis.value.filter(colab => {
@@ -84,14 +91,11 @@ createApp({
 
         const modalEdicao = reactive({ 
             aberto: false, id: null, local: '', causa: '', 
-            responsavel: '', quantidade: 1, dataOcorrencia: '', contabilizar: true 
+            responsavel: '', formato: '', linha: '', quantidade: 1, dataOcorrencia: '', contabilizar: true 
         });
         
         const modalRaioX = reactive({ aberto: false, nome: '', total: 0, causaFrequente: '', ultimos: [] });
         const modalSenha = reactive({ aberto: false, novaSenha: '', confirmarSenha: '', mensagem: '', erro: false });
-
-        const novaCausa = ref(''); 
-        const formColaborador = reactive({ nome: '', fabricas: [] });
 
         const fazerLogin = async () => {
             erroLogin.value = ''; carregando.value = true;
@@ -109,7 +113,7 @@ createApp({
         };
 
         const fazerLogout = () => { usuarioLogado.value = null; localStorage.removeItem('qc_user'); };
-        const salvarSessao = () => { localStorage.setItem('qc_user', JSON.stringify(usuarioLogado.value)); if (currentTab.value === 'dashboard') setTimeout(renderizarGraficoEvolucao, 100); };
+        const salvarSessao = () => { localStorage.setItem('qc_user', JSON.stringify(usuarioLogado.value)); if (currentTab.value === 'dashboard') setTimeout(renderizarGraficos, 100); };
 
         const iniciarMonitoramentoBanco = () => {
             if (!usuarioLogado.value) return;
@@ -122,6 +126,8 @@ createApp({
                     if (data.regraAtiva !== undefined) regraAtiva.value = data.regraAtiva;
                     if (data.metas) Object.assign(metas, data.metas);
                     if (data.causas) listaCausas.value = data.causas;
+                    if (data.formatos) listaFormatos.value = data.formatos; // Caregar formatos
+                    if (data.linhas) listaLinhas.value = data.linhas;       // Carregar linhas
                     
                     if (data.responsaveis) {
                         listaResponsaveis.value = data.responsaveis.map(item => {
@@ -139,20 +145,17 @@ createApp({
                 snapshot.forEach((docSnap) => {
                     const dado = docSnap.data();
                     let d = null;
-                    if (dado.timestamp) {
-                        d = dado.timestamp.toDate ? dado.timestamp.toDate() : new Date(dado.timestamp);
-                    }
+                    if (dado.timestamp) d = dado.timestamp.toDate ? dado.timestamp.toDate() : new Date(dado.timestamp);
                     let tempoMilisegundos = d ? d.getTime() : 0;
                     let dataFormatada = d ? `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}` : '';
 
                     let nomeResponsavel = dado.responsavel;
-                    if (typeof nomeResponsavel === 'object' && nomeResponsavel !== null) {
-                        nomeResponsavel = nomeResponsavel.nome || 'Indefinido';
-                    }
+                    if (typeof nomeResponsavel === 'object' && nomeResponsavel !== null) nomeResponsavel = nomeResponsavel.nome || 'Indefinido';
 
                     dadosMapeados.push({ 
                         id: docSnap.id, local: dado.local, causa: dado.causa, 
                         responsavel: nomeResponsavel || 'Indefinido', 
+                        formato: dado.formato || '', linha: dado.linha || '', // Mapeando
                         quantidade: Number(dado.quantidade || 1), 
                         dataHoraFormatada: dataFormatada, dataObj: d, 
                         ordenacaoTempo: tempoMilisegundos, contabilizar: dado.contabilizar !== false, 
@@ -162,7 +165,7 @@ createApp({
                 dadosMapeados.sort((a, b) => b.ordenacaoTempo - a.ordenacaoTempo);
                 registrosGerais.value = dadosMapeados;
                 carregando.value = false;
-                if(currentTab.value === 'dashboard') setTimeout(renderizarGraficoEvolucao, 350);
+                if(currentTab.value === 'dashboard') setTimeout(renderizarGraficos, 350);
             });
         };
 
@@ -171,22 +174,30 @@ createApp({
             if(usuarioLogado.value) iniciarMonitoramentoBanco();
         });
 
-        const salvarConfiguracoes = async () => { await setDoc(doc(db, "configuracoes", "geral"), { regraAtiva: regraAtiva.value, metas: { ...metas }, causas: listaCausas.value, responsaveis: listaResponsaveis.value }, { merge: true }); };
+        const salvarConfiguracoes = async () => { 
+            await setDoc(doc(db, "configuracoes", "geral"), { 
+                regraAtiva: regraAtiva.value, metas: { ...metas }, causas: listaCausas.value, 
+                formatos: listaFormatos.value, linhas: listaLinhas.value,
+                responsaveis: listaResponsaveis.value 
+            }, { merge: true }); 
+        };
         const salvarRegra = () => salvarConfiguracoes();
         
         const adicionarCausa = () => { if(novaCausa.value.trim()){ listaCausas.value.push(novaCausa.value.trim()); novaCausa.value = ''; salvarConfiguracoes(); } };
         const removerCausa = (index) => { listaCausas.value.splice(index, 1); salvarConfiguracoes(); };
         
+        // Funções de Gestão de Formatos e Linhas
+        const adicionarFormato = () => { if(novoFormato.value.trim()){ listaFormatos.value.push(novoFormato.value.trim()); novoFormato.value = ''; salvarConfiguracoes(); } };
+        const removerFormato = (index) => { listaFormatos.value.splice(index, 1); salvarConfiguracoes(); };
+        const adicionarLinha = () => { if(novaLinha.value.trim()){ listaLinhas.value.push(novaLinha.value.trim()); novaLinha.value = ''; salvarConfiguracoes(); } };
+        const removerLinha = (index) => { listaLinhas.value.splice(index, 1); salvarConfiguracoes(); };
+
         const adicionarColaborador = () => { 
             if(formColaborador.nome.trim() && formColaborador.fabricas.length > 0){ 
-                listaResponsaveis.value.push({
-                    nome: formColaborador.nome.trim(),
-                    fabricas: [...formColaborador.fabricas]
-                }); 
+                listaResponsaveis.value.push({ nome: formColaborador.nome.trim(), fabricas: [...formColaborador.fabricas] }); 
                 formColaborador.nome = ''; formColaborador.fabricas = []; salvarConfiguracoes(); 
             } else { alert("Preencha o nome e marque pelo menos uma fábrica."); }
         };
-        
         const removerColaborador = (nomeColaborador) => { 
             const index = listaResponsaveis.value.findIndex(c => c.nome === nomeColaborador);
             if (index !== -1) { listaResponsaveis.value.splice(index, 1); salvarConfiguracoes(); }
@@ -206,18 +217,21 @@ createApp({
             try {
                 await addDoc(collection(db, "registros"), {
                     local: form.local, causa: form.causa, responsavel: form.responsavel, 
+                    formato: form.formato, linha: form.linha, // Gravando campos
                     quantidade: Number(form.quantidade), timestamp: new Date(form.dataOcorrencia), 
                     contabilizar: form.contabilizar, fabrica: usuarioLogado.value.fabricaAtual
                 });
-                form.local = ''; form.causa = ''; form.responsavel = ''; form.quantidade = 1; form.dataOcorrencia = gerarDataAtualInput(); form.contabilizar = true; 
+                form.local = ''; form.causa = ''; form.responsavel = ''; form.formato = ''; form.linha = ''; form.quantidade = 1; form.dataOcorrencia = gerarDataAtualInput(); form.contabilizar = true; 
                 mensagemSucesso.value = true; setTimeout(() => { mensagemSucesso.value = false; }, 2000);
             } catch (e) { console.error(e); }
         };
 
         const deletarRegistro = async (id) => { if(confirm("Excluir?")) { await deleteDoc(doc(db, "registros", id)); } };
+        
         const abrirEdicao = (reg) => { 
             modalEdicao.id = reg.id; modalEdicao.local = reg.local; modalEdicao.causa = reg.causa; 
             modalEdicao.responsavel = reg.responsavel; modalEdicao.quantidade = reg.quantidade; modalEdicao.contabilizar = reg.contabilizar;
+            modalEdicao.formato = reg.formato || ''; modalEdicao.linha = reg.linha || '';
             if(reg.dataObj) {
                 const offset = reg.dataObj.getTimezoneOffset() * 60000;
                 modalEdicao.dataOcorrencia = new Date(reg.dataObj.getTime() - offset).toISOString().slice(0, 16);
@@ -227,6 +241,7 @@ createApp({
         const salvarEdicao = async () => { 
             await updateDoc(doc(db, "registros", modalEdicao.id), { 
                 local: modalEdicao.local, causa: modalEdicao.causa, responsavel: modalEdicao.responsavel, 
+                formato: modalEdicao.formato, linha: modalEdicao.linha,
                 quantidade: Number(modalEdicao.quantidade), contabilizar: modalEdicao.contabilizar, timestamp: new Date(modalEdicao.dataOcorrencia)
             }); 
             modalEdicao.aberto = false; 
@@ -241,79 +256,45 @@ createApp({
 
         const statusEquipe = computed(() => {
             const isRPVTab = abaConsequencias.value === 'RPV';
-            
             const dataLimiteNormal = new Date(); dataLimiteNormal.setDate(dataLimiteNormal.getDate() - 60);
             const dataLimiteRPV = new Date(); dataLimiteRPV.setMonth(dataLimiteRPV.getMonth() - 6);
             const dataLimite = isRPVTab ? dataLimiteRPV : dataLimiteNormal;
 
             return colaboradoresFiltrados.value.map(nomeResp => {
-                const registrosValidos = registros.value.filter(r => 
-                    r.contabilizar !== false && r.dataObj && r.responsavel === nomeResp &&
-                    (isRPVTab ? r.local === 'RPV' : r.local !== 'RPV') && 
-                    r.dataObj >= dataLimite
-                );
+                const registrosValidos = registros.value.filter(r => r.contabilizar !== false && r.dataObj && r.responsavel === nomeResp && (isRPVTab ? r.local === 'RPV' : r.local !== 'RPV') && r.dataObj >= dataLimite);
+                let totalGeral = 0; let erroDeVez = false; 
+                registrosValidos.forEach(r => { const qtd = Number(r.quantidade || 1); totalGeral += qtd; if (qtd >= 3) erroDeVez = true; });
                 
-                let totalGeral = 0; 
-                let erroDeVez = false; 
-                
-                registrosValidos.forEach(r => { 
-                    const qtd = Number(r.quantidade || 1);
-                    totalGeral += qtd; 
-                    if (qtd >= 3) erroDeVez = true; 
-                });
-                
-                let status = "Sem advertência"; 
-                let cor = "text-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800";
-                
+                let status = "Sem advertência"; let cor = "text-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800";
                 if (isRPVTab) {
-                    if (totalGeral > 0) {
-                        status = "Adv. Escrita (RPV)";
-                        cor = "text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-300 dark:border-rose-800";
-                    }
+                    if (totalGeral > 0) { status = "Adv. Escrita (RPV)"; cor = "text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-300 dark:border-rose-800"; }
                 } else {
-                    if (erroDeVez || totalGeral >= 3) { 
-                        status = "Advertência Escrita"; cor = "text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-300 dark:border-rose-800"; 
-                    } else if (totalGeral === 2) { 
-                        status = "Advertência Verbal"; cor = "text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-800"; 
-                    }
+                    if (erroDeVez || totalGeral >= 3) { status = "Advertência Escrita"; cor = "text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-300 dark:border-rose-800"; } 
+                    else if (totalGeral === 2) { status = "Advertência Verbal"; cor = "text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-800"; }
                 }
-                
                 return { nome: nomeResp, total: totalGeral, status, cor };
             }).sort((a, b) => b.total - a.total);
         });
 
         const destaquesEquipe = computed(() => {
             const isRPVTab = abaConsequencias.value === 'RPV';
-            
             const dataLimiteNormal = new Date(); dataLimiteNormal.setDate(dataLimiteNormal.getDate() - 60);
             const dataLimiteRPV = new Date(); dataLimiteRPV.setMonth(dataLimiteRPV.getMonth() - 6);
             const dataLimite = isRPVTab ? dataLimiteRPV : dataLimiteNormal;
-
             return colaboradoresFiltrados.value.filter(nomeResp => {
                 return !registros.value.some(r => {
                     if (r.contabilizar === false || !r.dataObj || r.responsavel !== nomeResp) return false;
-                    
-                    if (isRPVTab) {
-                        return r.local === 'RPV' && r.dataObj >= dataLimite;
-                    } else {
-                        return r.local !== 'RPV' && r.dataObj >= dataLimite;
-                    }
+                    return isRPVTab ? r.local === 'RPV' && r.dataObj >= dataLimite : r.local !== 'RPV' && r.dataObj >= dataLimite;
                 });
             });
         });
 
-        // --- NOVA LÓGICA DE CÁLCULO DE PERÍODO (MENSAL/ANUAL) ---
         const registrosDoPeriodo = computed(() => {
             return registros.value.filter(r => {
                 if (!r.dataObj) return false;
                 const mesAnoRegistro = `${r.dataObj.getFullYear()}-${String(r.dataObj.getMonth() + 1).padStart(2, '0')}`;
-                
-                if (visaoMetas.value === 'mensal') {
-                    return mesAnoRegistro === mesSelecionado.value;
-                } else {
-                    const anoSelecionado = mesSelecionado.value.split('-')[0];
-                    return String(r.dataObj.getFullYear()) === anoSelecionado;
-                }
+                if (visaoMetas.value === 'mensal') return mesAnoRegistro === mesSelecionado.value;
+                else return String(r.dataObj.getFullYear()) === mesSelecionado.value.split('-')[0];
             });
         });
 
@@ -324,7 +305,6 @@ createApp({
         const totalProducao = computed(() => registrosDoPeriodo.value.filter(r => r.local === 'Produção').reduce((acc, r) => acc + (r.quantidade || 1), 0));
         const totalEstoque = computed(() => registrosDoPeriodo.value.filter(r => r.local === 'Estoque').reduce((acc, r) => acc + (r.quantidade || 1), 0));
         const totalRPV = computed(() => registrosDoPeriodo.value.filter(r => r.local === 'RPV').reduce((acc, r) => acc + (r.quantidade || 1), 0));
-        // --------------------------------------------------------
         
         const percentualProducao = computed(() => limiteProducao.value > 0 ? (totalProducao.value / limiteProducao.value) * 100 : 0);
         const percentualEstoque = computed(() => limiteEstoque.value > 0 ? (totalEstoque.value / limiteEstoque.value) * 100 : 0);
@@ -332,48 +312,86 @@ createApp({
         
         const historicoFiltrado = computed(() => registros.value.filter(reg => reg.local === abaHistorico.value && (filtros.causa === '' || reg.causa === filtros.causa) && (filtros.responsavel === '' || reg.responsavel === filtros.responsavel)));
 
-        const renderizarGraficoEvolucao = () => {
-            const ctx = document.getElementById('evolucaoChart'); if (!ctx) return;
-            if (chartInstance.value) chartInstance.value.destroy();
-            const agrupamentoPorMes = {};
-            [...registros.value].reverse().forEach(reg => {
-                if(!reg.dataObj) return;
-                const d = reg.dataObj; const mesAno = `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
-                if (!agrupamentoPorMes[mesAno]) agrupamentoPorMes[mesAno] = { producao: 0, estoque: 0, rpv: 0 };
-                
-                if (reg.local === 'Produção') agrupamentoPorMes[mesAno].producao += (reg.quantidade || 1); 
-                else if (reg.local === 'Estoque') agrupamentoPorMes[mesAno].estoque += (reg.quantidade || 1);
-                else if (reg.local === 'RPV') agrupamentoPorMes[mesAno].rpv += (reg.quantidade || 1);
-            });
-            const mesesLabels = Object.keys(agrupamentoPorMes);
-            const nomesMeses = {'01':'Jan', '02':'Fev', '03':'Mar', '04':'Abr', '05':'Mai', '06':'Jun', '07':'Jul', '08':'Ago', '09':'Set', '10':'Out', '11':'Nov', '12':'Dez'};
-            
-            const bgProducao = mesesLabels.map(m => agrupamentoPorMes[m].producao > metas.producaoMensal ? '#ef4444' : '#10b981');
-            const bgEstoque = mesesLabels.map(m => agrupamentoPorMes[m].estoque > metas.estoqueMensal ? '#ef4444' : '#10b981');
-            const bgRPV = mesesLabels.map(m => agrupamentoPorMes[m].rpv > metas.rpvMensal ? '#ef4444' : '#a855f7');
-            
+        const renderizarGraficos = () => {
             const tc = isDarkMode.value ? '#94a3b8' : '#64748b'; const gc = isDarkMode.value ? '#334155' : '#f1f5f9';
-            const pluginTitulos = { id: 'titulosEmbaixo', afterDatasetsDraw(chart) { const { ctx, scales: { x, y } } = chart; ctx.save(); ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = isDarkMode.value ? '#cbd5e1' : '#64748b'; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); if (!meta.hidden) { meta.data.forEach((bar) => { const label = dataset.label === 'Produção' ? 'PROD' : (dataset.label === 'Estoque' ? 'EST' : 'RPV'); ctx.fillText(label, bar.x, y.bottom + 6); }); } }); ctx.restore(); } };
-            
-            chartInstance.value = new Chart(ctx, { 
-                type: 'bar', 
-                data: { 
-                    labels: mesesLabels.map(ma => `${nomesMeses[ma.split('/')[0]]}/${ma.split('/')[1].substring(2)}`), 
-                    datasets: [
-                        { label: 'Produção', data: mesesLabels.map(m => agrupamentoPorMes[m].producao), backgroundColor: bgProducao, borderRadius: 4 }, 
-                        { label: 'Estoque', data: mesesLabels.map(m => agrupamentoPorMes[m].estoque), backgroundColor: bgEstoque, borderRadius: 4 },
-                        { label: 'RPV', data: mesesLabels.map(m => agrupamentoPorMes[m].rpv), backgroundColor: bgRPV, borderRadius: 4 }
-                    ] 
-                }, 
-                options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: tc, font: { weight: 'bold' }, padding: 22 }, grid: { color: gc, drawBorder: false } }, y: { ticks: { color: tc }, grid: { color: gc, drawBorder: false } } }, plugins: { legend: { labels: { color: tc } } } }, 
-                plugins: [pluginTitulos] 
-            });
+
+            // 1. Gráfico de Evolução
+            const ctxEvolucao = document.getElementById('evolucaoChart'); 
+            if (ctxEvolucao) {
+                if (chartInstance.value) chartInstance.value.destroy();
+                const agrupamentoPorMes = {};
+                [...registros.value].reverse().forEach(reg => {
+                    if(!reg.dataObj) return;
+                    const d = reg.dataObj; const mesAno = `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+                    if (!agrupamentoPorMes[mesAno]) agrupamentoPorMes[mesAno] = { producao: 0, estoque: 0, rpv: 0 };
+                    
+                    if (reg.local === 'Produção') agrupamentoPorMes[mesAno].producao += (reg.quantidade || 1); 
+                    else if (reg.local === 'Estoque') agrupamentoPorMes[mesAno].estoque += (reg.quantidade || 1);
+                    else if (reg.local === 'RPV') agrupamentoPorMes[mesAno].rpv += (reg.quantidade || 1);
+                });
+                const mesesLabels = Object.keys(agrupamentoPorMes);
+                const nomesMeses = {'01':'Jan', '02':'Fev', '03':'Mar', '04':'Abr', '05':'Mai', '06':'Jun', '07':'Jul', '08':'Ago', '09':'Set', '10':'Out', '11':'Nov', '12':'Dez'};
+                
+                const bgProducao = mesesLabels.map(m => agrupamentoPorMes[m].producao > metas.producaoMensal ? '#ef4444' : '#10b981');
+                const bgEstoque = mesesLabels.map(m => agrupamentoPorMes[m].estoque > metas.estoqueMensal ? '#ef4444' : '#10b981');
+                const bgRPV = mesesLabels.map(m => agrupamentoPorMes[m].rpv > metas.rpvMensal ? '#ef4444' : '#a855f7');
+                
+                const pluginTitulos = { id: 'titulosEmbaixo', afterDatasetsDraw(chart) { const { ctx, scales: { x, y } } = chart; ctx.save(); ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = isDarkMode.value ? '#cbd5e1' : '#64748b'; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); if (!meta.hidden) { meta.data.forEach((bar) => { const label = dataset.label === 'Produção' ? 'PROD' : (dataset.label === 'Estoque' ? 'EST' : 'RPV'); ctx.fillText(label, bar.x, y.bottom + 6); }); } }); ctx.restore(); } };
+                
+                chartInstance.value = new Chart(ctxEvolucao, { 
+                    type: 'bar', 
+                    data: { 
+                        labels: mesesLabels.map(ma => `${nomesMeses[ma.split('/')[0]]}/${ma.split('/')[1].substring(2)}`), 
+                        datasets: [
+                            { label: 'Produção', data: mesesLabels.map(m => agrupamentoPorMes[m].producao), backgroundColor: bgProducao, borderRadius: 4 }, 
+                            { label: 'Estoque', data: mesesLabels.map(m => agrupamentoPorMes[m].estoque), backgroundColor: bgEstoque, borderRadius: 4 },
+                            { label: 'RPV', data: mesesLabels.map(m => agrupamentoPorMes[m].rpv), backgroundColor: bgRPV, borderRadius: 4 }
+                        ] 
+                    }, 
+                    options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: tc, font: { weight: 'bold' }, padding: 22 }, grid: { color: gc, drawBorder: false } }, y: { ticks: { color: tc }, grid: { color: gc, drawBorder: false } } }, plugins: { legend: { labels: { color: tc } } } }, 
+                    plugins: [pluginTitulos] 
+                });
+            }
+
+            // 2. Gráfico de Formatos (Ranking Horizontal)
+            const ctxFormatos = document.getElementById('chartFormatos');
+            if (ctxFormatos) {
+                if (chartInstanceFormatos.value) chartInstanceFormatos.value.destroy();
+                const formatCounts = {};
+                registrosDoPeriodo.value.forEach(r => { if (r.formato) formatCounts[r.formato] = (formatCounts[r.formato] || 0) + (r.quantidade || 1); });
+                
+                const sortedFormatos = Object.entries(formatCounts).sort((a,b) => b[1] - a[1]);
+                
+                chartInstanceFormatos.value = new Chart(ctxFormatos, {
+                    type: 'bar',
+                    data: { labels: sortedFormatos.map(i => i[0]), datasets: [{ label: 'Ocorrências', data: sortedFormatos.map(i => i[1]), backgroundColor: '#f59e0b', borderRadius: 4 }] },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: tc }, grid: { color: gc, drawBorder: false } }, y: { ticks: { color: tc }, grid: { display: false } } }, plugins: { legend: { display: false } } }
+                });
+            }
+
+            // 3. Gráfico de Linhas (Ranking Horizontal)
+            const ctxLinhas = document.getElementById('chartLinhas');
+            if (ctxLinhas) {
+                if (chartInstanceLinhas.value) chartInstanceLinhas.value.destroy();
+                const lineCounts = {};
+                registrosDoPeriodo.value.forEach(r => { if (r.linha) lineCounts[r.linha] = (lineCounts[r.linha] || 0) + (r.quantidade || 1); });
+                
+                const sortedLinhas = Object.entries(lineCounts).sort((a,b) => b[1] - a[1]);
+                
+                chartInstanceLinhas.value = new Chart(ctxLinhas, {
+                    type: 'bar',
+                    data: { labels: sortedLinhas.map(i => i[0]), datasets: [{ label: 'Ocorrências', data: sortedLinhas.map(i => i[1]), backgroundColor: '#3b82f6', borderRadius: 4 }] },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: tc }, grid: { color: gc, drawBorder: false } }, y: { ticks: { color: tc }, grid: { display: false } } }, plugins: { legend: { display: false } } }
+                });
+            }
         };
 
-        watch(currentTab, (newTab) => { if (newTab === 'dashboard') setTimeout(renderizarGraficoEvolucao, 350); });
+        watch(currentTab, (newTab) => { if (newTab === 'dashboard') setTimeout(renderizarGraficos, 350); });
+        watch(mesSelecionado, () => { if (currentTab.value === 'dashboard') setTimeout(renderizarGraficos, 100); });
+        watch(visaoMetas, () => { if (currentTab.value === 'dashboard') setTimeout(renderizarGraficos, 100); });
 
         return {
-            usuarioLogado, loginForm, erroLogin, fazerLogin, fazerLogout, salvarSessao, currentTab, menuMobileAberto, mudarAba, carregando, isDarkMode, toggleTheme, regraAtiva, salvarRegra, form, salvarRegistro, mensagemSucesso, modalEdicao, abrirEdicao, salvarEdicao, visaoMetas, metas, salvarConfiguracoes, totalProducao, totalEstoque, totalRPV, percentualProducao, percentualEstoque, percentualRPV, limiteProducao, limiteEstoque, limiteRPV, registros, abaHistorico, abaConsequencias, filtros, historicoFiltrado, limparFiltros, deletarRegistro, listaCausas, novaCausa, adicionarCausa, removerCausa, listaResponsaveis, formColaborador, adicionarColaborador, removerColaborador, statusEquipe, destaquesEquipe, modalRaioX, abrirRaioX, modalSenha, abrirModalSenha, alterarSenha, colaboradoresFiltrados, responsaveisDoUsuario, mesSelecionado
+            usuarioLogado, loginForm, erroLogin, fazerLogin, fazerLogout, salvarSessao, currentTab, menuMobileAberto, mudarAba, carregando, isDarkMode, toggleTheme, regraAtiva, salvarRegra, form, salvarRegistro, mensagemSucesso, modalEdicao, abrirEdicao, salvarEdicao, visaoMetas, metas, salvarConfiguracoes, totalProducao, totalEstoque, totalRPV, percentualProducao, percentualEstoque, percentualRPV, limiteProducao, limiteEstoque, limiteRPV, registros, abaHistorico, abaConsequencias, filtros, historicoFiltrado, limparFiltros, deletarRegistro, listaCausas, novaCausa, adicionarCausa, removerCausa, listaResponsaveis, formColaborador, adicionarColaborador, removerColaborador, statusEquipe, destaquesEquipe, modalRaioX, abrirRaioX, modalSenha, abrirModalSenha, alterarSenha, colaboradoresFiltrados, responsaveisDoUsuario, mesSelecionado, listaFormatos, listaLinhas, novoFormato, novaLinha, adicionarFormato, removerFormato, adicionarLinha, removerLinha
         }
     }
 }).mount('#app')
