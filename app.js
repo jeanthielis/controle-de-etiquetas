@@ -23,6 +23,12 @@ createApp({
         const carregando = ref(false);
         const chartInstance = ref(null);
 
+        const mesAtualFormato = () => {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        };
+        const mesSelecionado = ref(mesAtualFormato())
+
         const isDarkMode = ref(localStorage.getItem('qc_theme') === 'dark');
         const toggleTheme = () => {
             isDarkMode.value = !isDarkMode.value;
@@ -30,6 +36,7 @@ createApp({
             document.documentElement.classList.toggle('dark', isDarkMode.value);
             if (currentTab.value === 'dashboard') setTimeout(() => renderizarGraficoEvolucao(), 50);
         };
+        
 
         const regraAtiva = ref(true);
         const metas = reactive({ producaoMensal: 0, producaoAnual: 0, estoqueMensal: 0, estoqueAnual: 0, rpvMensal: 0, rpvAnual: 0 });
@@ -298,9 +305,26 @@ createApp({
         const limiteEstoque = computed(() => visaoMetas.value === 'mensal' ? metas.estoqueMensal : metas.estoqueAnual);
         const limiteRPV = computed(() => visaoMetas.value === 'mensal' ? metas.rpvMensal : metas.rpvAnual);
         
-        const totalProducao = computed(() => registros.value.filter(r => r.local === 'Produção').reduce((acc, r) => acc + (r.quantidade || 1), 0));
-        const totalEstoque = computed(() => registros.value.filter(r => r.local === 'Estoque').reduce((acc, r) => acc + (r.quantidade || 1), 0));
-        const totalRPV = computed(() => registros.value.filter(r => r.local === 'RPV').reduce((acc, r) => acc + (r.quantidade || 1), 0));
+        // --- SUBSTITUA AS VARIÁVEIS DE TOTAL POR ESTE BLOCO ---
+        const registrosDoPeriodo = computed(() => {
+            return registros.value.filter(r => {
+                if (!r.dataObj) return false;
+                // Pega o formato YYYY-MM do banco para comparar com o input
+                const mesAnoRegistro = `${r.dataObj.getFullYear()}-${String(r.dataObj.getMonth() + 1).padStart(2, '0')}`;
+                
+                if (visaoMetas.value === 'mensal') {
+                    return mesAnoRegistro === mesSelecionado.value;
+                } else {
+                    // Visão Anual: compara apenas se o ano é o mesmo do mês selecionado
+                    const anoSelecionado = mesSelecionado.value.split('-')[0];
+                    return String(r.dataObj.getFullYear()) === anoSelecionado;
+                }
+            });
+        });
+        
+        const totalProducao = computed(() => registrosDoPeriodo.value.filter(r => r.local === 'Produção').reduce((acc, r) => acc + (r.quantidade || 1), 0));
+        const totalEstoque = computed(() => registrosDoPeriodo.value.filter(r => r.local === 'Estoque').reduce((acc, r) => acc + (r.quantidade || 1), 0));
+        const totalRPV = computed(() => registrosDoPeriodo.value.filter(r => r.local === 'RPV').reduce((acc, r) => acc + (r.quantidade || 1), 0));
         
         const percentualProducao = computed(() => limiteProducao.value > 0 ? (totalProducao.value / limiteProducao.value) * 100 : 0);
         const percentualEstoque = computed(() => limiteEstoque.value > 0 ? (totalEstoque.value / limiteEstoque.value) * 100 : 0);
@@ -349,7 +373,7 @@ createApp({
         watch(currentTab, (newTab) => { if (newTab === 'dashboard') setTimeout(renderizarGraficoEvolucao, 350); });
 
         return {
-            usuarioLogado, loginForm, erroLogin, fazerLogin, fazerLogout, salvarSessao, currentTab, menuMobileAberto, mudarAba, carregando, isDarkMode, toggleTheme, regraAtiva, salvarRegra, form, salvarRegistro, mensagemSucesso, modalEdicao, abrirEdicao, salvarEdicao, visaoMetas, metas, salvarConfiguracoes, totalProducao, totalEstoque, totalRPV, percentualProducao, percentualEstoque, percentualRPV, limiteProducao, limiteEstoque, limiteRPV, registros, abaHistorico, abaConsequencias, filtros, historicoFiltrado, limparFiltros, deletarRegistro, listaCausas, novaCausa, adicionarCausa, removerCausa, listaResponsaveis, formColaborador, adicionarColaborador, removerColaborador, statusEquipe, destaquesEquipe, modalRaioX, abrirRaioX, modalSenha, abrirModalSenha, alterarSenha, colaboradoresFiltrados, responsaveisDoUsuario
+            mesSelecionado,usuarioLogado, loginForm, erroLogin, fazerLogin, fazerLogout, salvarSessao, currentTab, menuMobileAberto, mudarAba, carregando, isDarkMode, toggleTheme, regraAtiva, salvarRegra, form, salvarRegistro, mensagemSucesso, modalEdicao, abrirEdicao, salvarEdicao, visaoMetas, metas, salvarConfiguracoes, totalProducao, totalEstoque, totalRPV, percentualProducao, percentualEstoque, percentualRPV, limiteProducao, limiteEstoque, limiteRPV, registros, abaHistorico, abaConsequencias, filtros, historicoFiltrado, limparFiltros, deletarRegistro, listaCausas, novaCausa, adicionarCausa, removerCausa, listaResponsaveis, formColaborador, adicionarColaborador, removerColaborador, statusEquipe, destaquesEquipe, modalRaioX, abrirRaioX, modalSenha, abrirModalSenha, alterarSenha, colaboradoresFiltrados, responsaveisDoUsuario
         }
     }
 }).mount('#app')
